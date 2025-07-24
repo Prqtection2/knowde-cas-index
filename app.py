@@ -98,31 +98,41 @@ def load_data():
             tscainv_file_id = GOOGLE_DRIVE_FILES.get('tscainv', {}).get('file_id')
             if tscainv_file_id and tscainv_file_id != 'YOUR_TSCAINV_FILE_ID_HERE':
                 print(f"Loading TSCAINV from Google Drive: {tscainv_file_id}")
+                
+                # Use the correct Google Drive direct download URL
+                # This format works for publicly shared files
                 tscainv_url = f"https://drive.google.com/uc?export=download&id={tscainv_file_id}"
-                tscainv_data = pd.read_csv(tscainv_url)
-                print(f"✓ Loaded TSCAINV from Google Drive: {len(tscainv_data)} records")
+                
+                try:
+                    print(f"Fetching from: {tscainv_url}")
+                    response = requests.get(tscainv_url, timeout=60)
+                    print(f"Response status: {response.status_code}")
+                    print(f"Response headers: {dict(response.headers)}")
+                    
+                    if response.status_code == 200:
+                        # Check if we got actual CSV data or a redirect page
+                        content = response.text
+                        if content.startswith('ID,CASRN,casregno') or 'ID' in content and 'CASRN' in content:
+                            tscainv_data = pd.read_csv(io.StringIO(content))
+                            print(f"✓ Loaded TSCAINV from Google Drive: {len(tscainv_data)} records")
+                        else:
+                            print(f"✗ Got response but not CSV data. First 200 chars: {content[:200]}")
+                            raise Exception("Response is not CSV data")
+                    else:
+                        print(f"✗ HTTP error: {response.status_code}")
+                        raise Exception(f"HTTP {response.status_code}")
+                        
+                except Exception as e:
+                    print(f"✗ Failed to load from Google Drive: {e}")
+                    raise e
+                    
             else:
-                print("No valid TSCAINV Google Drive file ID, trying local file...")
-                # Fallback to local file
-                if os.path.exists('TSCAINV_012025.csv'):
-                    tscainv_data = pd.read_csv('TSCAINV_012025.csv')
-                    print(f"✓ Loaded TSCAINV from local file: {len(tscainv_data)} records")
-                else:
-                    print("✗ TSCAINV file not found locally")
-                    tscainv_data = None
+                print("No valid TSCAINV Google Drive file ID")
+                tscainv_data = None
+                
         except Exception as e:
             print(f"✗ Failed to load TSCAINV from Google Drive: {e}")
-            # Fallback to local file
-            try:
-                if os.path.exists('TSCAINV_012025.csv'):
-                    tscainv_data = pd.read_csv('TSCAINV_012025.csv')
-                    print(f"✓ Loaded TSCAINV from local file (fallback): {len(tscainv_data)} records")
-                else:
-                    print("✗ TSCAINV file not found locally")
-                    tscainv_data = None
-            except Exception as e2:
-                print(f"✗ Failed to load TSCAINV from local file: {e2}")
-                tscainv_data = None
+            tscainv_data = None
         
         # Load PMNACC data (local only for now since it's disabled)
         try:
@@ -557,6 +567,43 @@ def test_data():
             }
     
     return jsonify(result)
+
+@app.route('/api/test-google-drive')
+def test_google_drive():
+    """Test Google Drive file access directly"""
+    try:
+        tscainv_file_id = GOOGLE_DRIVE_FILES.get('tscainv', {}).get('file_id')
+        if not tscainv_file_id or tscainv_file_id == 'YOUR_TSCAINV_FILE_ID_HERE':
+            return jsonify({'error': 'No valid file ID configured'})
+        
+        url = f"https://drive.google.com/uc?export=download&id={tscainv_file_id}"
+        
+        response = requests.get(url, timeout=30)
+        
+        result = {
+            'file_id': tscainv_file_id,
+            'url': url,
+            'status_code': response.status_code,
+            'content_length': len(response.content),
+            'content_type': response.headers.get('content-type', 'unknown'),
+            'first_200_chars': response.text[:200] if response.text else 'No content'
+        }
+        
+        # Check if it looks like CSV data
+        if response.status_code == 200:
+            content = response.text
+            if content.startswith('ID,CASRN,casregno') or ('ID' in content and 'CASRN' in content):
+                result['is_csv'] = True
+                result['csv_columns'] = content.split('\n')[0].split(',') if '\n' in content else []
+            else:
+                result['is_csv'] = False
+        else:
+            result['is_csv'] = False
+            
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)})
 
 if __name__ == '__main__':
     # Load data on startup
