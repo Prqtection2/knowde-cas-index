@@ -86,38 +86,51 @@ def get_flag_description(flag):
     return "; ".join(descriptions)
 
 def load_data():
-    """Load CSV data files into memory"""
+    """Load CSV data files from Google Drive or local files"""
     global pmnacc_data, tscainv_data
     
     try:
         print("Starting data load...")
         
-        # Check if files exist
-        import os
-        print(f"Current working directory: {os.getcwd()}")
-        print(f"Files in current directory: {os.listdir('.')}")
-        
-        # Load TSCAINV data first (main database)
+        # Try to load from Google Drive first
         try:
-            if os.path.exists('TSCAINV_012025.csv'):
-                print("✓ TSCAINV_012025.csv file found")
-                tscainv_data = pd.read_csv('TSCAINV_012025.csv')
-                print(f"✓ Loaded TSCAINV data: {len(tscainv_data)} records")
+            # Load TSCAINV from Google Drive
+            tscainv_file_id = GOOGLE_DRIVE_FILES.get('tscainv', {}).get('file_id')
+            if tscainv_file_id and tscainv_file_id != 'YOUR_TSCAINV_FILE_ID_HERE':
+                print(f"Loading TSCAINV from Google Drive: {tscainv_file_id}")
+                tscainv_url = f"https://drive.google.com/uc?export=download&id={tscainv_file_id}"
+                tscainv_data = pd.read_csv(tscainv_url)
+                print(f"✓ Loaded TSCAINV from Google Drive: {len(tscainv_data)} records")
             else:
-                print("✗ TSCAINV_012025.csv file NOT found")
-                tscainv_data = None
+                print("No valid TSCAINV Google Drive file ID, trying local file...")
+                # Fallback to local file
+                if os.path.exists('TSCAINV_012025.csv'):
+                    tscainv_data = pd.read_csv('TSCAINV_012025.csv')
+                    print(f"✓ Loaded TSCAINV from local file: {len(tscainv_data)} records")
+                else:
+                    print("✗ TSCAINV file not found locally")
+                    tscainv_data = None
         except Exception as e:
-            print(f"✗ Failed to load TSCAINV data: {e}")
-            tscainv_data = None
+            print(f"✗ Failed to load TSCAINV from Google Drive: {e}")
+            # Fallback to local file
+            try:
+                if os.path.exists('TSCAINV_012025.csv'):
+                    tscainv_data = pd.read_csv('TSCAINV_012025.csv')
+                    print(f"✓ Loaded TSCAINV from local file (fallback): {len(tscainv_data)} records")
+                else:
+                    print("✗ TSCAINV file not found locally")
+                    tscainv_data = None
+            except Exception as e2:
+                print(f"✗ Failed to load TSCAINV from local file: {e2}")
+                tscainv_data = None
         
-        # Load PMNACC data
+        # Load PMNACC data (local only for now since it's disabled)
         try:
             if os.path.exists('PMNACC_012025.csv'):
-                print("✓ PMNACC_012025.csv file found")
                 pmnacc_data = pd.read_csv('PMNACC_012025.csv')
-                print(f"✓ Loaded PMNACC data: {len(pmnacc_data)} records")
+                print(f"✓ Loaded PMNACC from local file: {len(pmnacc_data)} records")
             else:
-                print("✗ PMNACC_012025.csv file NOT found")
+                print("✗ PMNACC file not found locally")
                 pmnacc_data = None
         except Exception as e:
             print(f"✗ Failed to load PMNACC data: {e}")
@@ -509,6 +522,12 @@ def test_data():
         'pmnacc_loaded': pmnacc_data is not None,
         'tscainv_count': len(tscainv_data) if tscainv_data is not None else 0,
         'pmnacc_count': len(pmnacc_data) if pmnacc_data is not None else 0,
+        'google_drive_config': {
+            'tscainv_file_id': GOOGLE_DRIVE_FILES.get('tscainv', {}).get('file_id'),
+            'tscainv_enabled': GOOGLE_DRIVE_FILES.get('tscainv', {}).get('enabled'),
+            'pmnacc_file_id': GOOGLE_DRIVE_FILES.get('pmnacc', {}).get('file_id'),
+            'pmnacc_enabled': GOOGLE_DRIVE_FILES.get('pmnacc', {}).get('enabled')
+        },
         'file_system': {
             'current_directory': os.getcwd(),
             'files_in_directory': os.listdir('.'),
