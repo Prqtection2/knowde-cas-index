@@ -86,68 +86,60 @@ def get_flag_description(flag):
     return "; ".join(descriptions)
 
 def load_data():
-    """Load CSV data files from Google Drive or local files"""
+    """Load CSV data files from Google Drive"""
     global pmnacc_data, tscainv_data
     
     try:
-        print("Starting data load...")
+        print("Starting data load from Google Drive...")
         
-        # Try to load from Google Drive first
-        try:
-            # Load TSCAINV from Google Drive
-            tscainv_file_id = GOOGLE_DRIVE_FILES.get('tscainv', {}).get('file_id')
-            if tscainv_file_id and tscainv_file_id != 'YOUR_TSCAINV_FILE_ID_HERE':
-                print(f"Loading TSCAINV from Google Drive: {tscainv_file_id}")
+        # Load TSCAINV from Google Drive
+        tscainv_file_id = GOOGLE_DRIVE_FILES.get('tscainv', {}).get('file_id')
+        if tscainv_file_id and tscainv_file_id != 'YOUR_TSCAINV_FILE_ID_HERE':
+            print(f"Loading TSCAINV from Google Drive: {tscainv_file_id}")
+            
+            # Use direct file access URL - this bypasses Google Drive's download restrictions
+            tscainv_url = f"https://drive.google.com/file/d/{tscainv_file_id}/view?usp=sharing"
+            
+            try:
+                print(f"Fetching from: {tscainv_url}")
                 
-                # Use the correct Google Drive direct download URL
-                # This format works for publicly shared files
-                tscainv_url = f"https://drive.google.com/uc?export=download&id={tscainv_file_id}"
+                # First, get the file info to check if it's accessible
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                }
                 
-                try:
-                    print(f"Fetching from: {tscainv_url}")
-                    response = requests.get(tscainv_url, timeout=60)
-                    print(f"Response status: {response.status_code}")
-                    print(f"Response headers: {dict(response.headers)}")
-                    
-                    if response.status_code == 200:
-                        # Check if we got actual CSV data or a redirect page
-                        content = response.text
-                        if content.startswith('ID,CASRN,casregno') or 'ID' in content and 'CASRN' in content:
-                            tscainv_data = pd.read_csv(io.StringIO(content))
-                            print(f"✓ Loaded TSCAINV from Google Drive: {len(tscainv_data)} records")
-                        else:
-                            print(f"✗ Got response but not CSV data. First 200 chars: {content[:200]}")
-                            raise Exception("Response is not CSV data")
+                # Try the direct download URL
+                download_url = f"https://drive.google.com/uc?export=download&id={tscainv_file_id}"
+                response = requests.get(download_url, headers=headers, timeout=120)
+                
+                print(f"Response status: {response.status_code}")
+                print(f"Content length: {len(response.content)}")
+                
+                if response.status_code == 200 and len(response.content) > 1000:
+                    # Check if we got actual CSV data
+                    content = response.text
+                    if 'ID,CASRN,casregno' in content or content.startswith('ID,'):
+                        tscainv_data = pd.read_csv(io.StringIO(content))
+                        print(f"✓ Loaded TSCAINV from Google Drive: {len(tscainv_data)} records")
                     else:
-                        print(f"✗ HTTP error: {response.status_code}")
-                        raise Exception(f"HTTP {response.status_code}")
-                        
-                except Exception as e:
-                    print(f"✗ Failed to load from Google Drive: {e}")
-                    raise e
+                        print(f"✗ Response doesn't contain expected CSV headers. First 500 chars: {content[:500]}")
+                        raise Exception("Invalid CSV format")
+                else:
+                    print(f"✗ Failed to get valid response. Status: {response.status_code}, Length: {len(response.content)}")
+                    raise Exception(f"HTTP {response.status_code}")
                     
-            else:
-                print("No valid TSCAINV Google Drive file ID")
-                tscainv_data = None
-                
-        except Exception as e:
-            print(f"✗ Failed to load TSCAINV from Google Drive: {e}")
+            except Exception as e:
+                print(f"✗ Failed to load from Google Drive: {e}")
+                raise e
+        else:
+            print("No valid TSCAINV Google Drive file ID configured")
             tscainv_data = None
         
-        # Load PMNACC data (local only for now since it's disabled)
-        try:
-            if os.path.exists('PMNACC_012025.csv'):
-                pmnacc_data = pd.read_csv('PMNACC_012025.csv')
-                print(f"✓ Loaded PMNACC from local file: {len(pmnacc_data)} records")
-            else:
-                print("✗ PMNACC file not found locally")
-                pmnacc_data = None
-        except Exception as e:
-            print(f"✗ Failed to load PMNACC data: {e}")
-            pmnacc_data = None
+        # Load PMNACC data (disabled for now)
+        pmnacc_data = None
         
         # Check if at least one database loaded
-        if tscainv_data is None and pmnacc_data is None:
+        if tscainv_data is None:
             print("✗ No databases loaded successfully")
             return False
         
@@ -654,13 +646,14 @@ def test_cas_number(cas_number):
     except Exception as e:
         return jsonify({'error': str(e)})
 
+# Load data on startup (for both development and production)
+print("Starting application and loading data...")
+if load_data():
+    print("✓ Data loaded successfully")
+else:
+    print("✗ Failed to load data - application may not work properly")
+
 if __name__ == '__main__':
-    # Load data on startup
-    if load_data():
-        print("Data loaded successfully!")
-    else:
-        print("Warning: Failed to load data files")
-    
     # Run the app
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False) 
