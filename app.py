@@ -5,6 +5,38 @@ import re
 from werkzeug.utils import secure_filename
 import io
 import tempfile
+from datetime import datetime
+import requests
+
+# Import configuration
+try:
+    from config import GOOGLE_DRIVE_CONFIG, LOCAL_FILES
+except ImportError:
+    # Fallback configuration if config.py doesn't exist
+    GOOGLE_DRIVE_CONFIG = {
+        'tscainv': {
+            'file_id': 'YOUR_TSCAINV_FILE_ID_HERE',
+            'file_name': 'TSCAINV_012025.csv',
+            'file_pattern': 'TSCAINV_*.csv',
+            'folder_name': 'Chemical_Databases',
+            'name': 'TSCA Inventory Database',
+            'last_updated': '2025-01-23 18:30:00',
+            'enabled': True
+        },
+        'pmnacc': {
+            'file_id': 'YOUR_PMNACC_FILE_ID_HERE',
+            'file_name': 'PMNACC_012025.csv',
+            'file_pattern': 'PMNACC_*.csv',
+            'folder_name': 'Chemical_Databases',
+            'name': 'PMNACC Database',
+            'last_updated': '2025-01-23 18:30:00',
+            'enabled': False
+        }
+    }
+    LOCAL_FILES = {
+        'tscainv': 'TSCAINV_012025.csv',
+        'pmnacc': 'PMNACC_012025.csv'
+    }
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
@@ -12,6 +44,9 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 # Global variables to store the loaded data
 pmnacc_data = None
 tscainv_data = None
+
+# Use configuration from config.py
+GOOGLE_DRIVE_FILES = GOOGLE_DRIVE_CONFIG
 
 def load_data():
     """Load CSV data files into memory"""
@@ -107,10 +142,51 @@ def extract_cas_numbers_from_file(file_content, filename):
     
     return list(cas_numbers)
 
+def get_google_drive_file_info(file_config):
+    """Get file information from Google Drive using multiple strategies"""
+    try:
+        # Strategy 1: Try using file ID first
+        if file_config.get('file_id') and file_config['file_id'] != 'YOUR_TSCAINV_FILE_ID_HERE':
+            url = f"https://drive.google.com/uc?export=download&id={file_config['file_id']}"
+            response = requests.head(url, allow_redirects=True)
+            
+            if response.status_code == 200:
+                return {
+                    'success': True,
+                    'method': 'file_id',
+                    'last_modified': response.headers.get('Last-Modified', 'Unknown'),
+                    'size': response.headers.get('Content-Length', 'Unknown'),
+                    'file_name': file_config.get('file_name', 'Unknown')
+                }
+        
+        # Strategy 2: Try using file name pattern (for future implementation)
+        # This would require Google Drive API authentication
+        # For now, return a fallback response
+        return {
+            'success': True,
+            'method': 'fallback',
+            'last_modified': file_config.get('last_updated', 'Unknown'),
+            'size': 'Unknown (requires API)',
+            'file_name': file_config.get('file_name', 'Unknown'),
+            'note': 'File ID not configured. Please update file_id in app.py'
+        }
+        
+    except Exception as e:
+        return {
+            'success': False,
+            'error': str(e),
+            'method': 'error'
+        }
+
 @app.route('/')
 def index():
     """Main page"""
     return render_template('index.html')
+
+@app.route('/update-panel')
+def update_panel():
+    """Update panel page"""
+    return render_template('update_panel.html', databases=GOOGLE_DRIVE_FILES)
 
 @app.route('/api/search', methods=['POST'])
 def search():
@@ -167,6 +243,66 @@ def upload_file():
             return jsonify({'error': 'No matching chemicals found for the CAS numbers in the uploaded file'}), 404
         
         return jsonify({'results': all_results})
+    
+    except Exception as e:
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+@app.route('/api/update-database', methods=['POST'])
+def update_database():
+    """API endpoint for updating database from Google Drive"""
+    try:
+        data = request.get_json()
+        database_key = data.get('database')
+        
+        if database_key not in GOOGLE_DRIVE_FILES:
+            return jsonify({'error': 'Invalid database specified'}), 400
+        
+        database_info = GOOGLE_DRIVE_FILES[database_key]
+        
+        if not database_info.get('enabled', True):
+            return jsonify({'error': 'This database is currently disabled'}), 400
+        
+        # For now, simulate the update process
+        # In the future, this will:
+        # 1. Download new file from Google Drive
+        # 2. Replace the existing file content (same file ID)
+        # 3. Update the local database
+        # 4. Reload the data
+        
+        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        # Simulate update process
+        update_status = {
+            'success': True,
+            'message': f'{database_info["name"]} update initiated',
+            'timestamp': current_time,
+            'details': {
+                'method': 'Google Drive API Replace',
+                'file_id': database_info.get('file_id', 'Not configured'),
+                'status': 'Update will replace file content while keeping same file ID'
+            }
+        }
+        
+        return jsonify(update_status)
+    
+    except Exception as e:
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+@app.route('/api/database-info')
+def database_info():
+    """API endpoint for getting database information"""
+    try:
+        info = {}
+        for key, db_info in GOOGLE_DRIVE_FILES.items():
+            if db_info.get('enabled', True):
+                file_info = get_google_drive_file_info(db_info)
+                info[key] = {
+                    'name': db_info['name'],
+                    'last_updated': db_info['last_updated'],
+                    'file_info': file_info
+                }
+        
+        return jsonify(info)
     
     except Exception as e:
         return jsonify({'error': f'Server error: {str(e)}'}), 500

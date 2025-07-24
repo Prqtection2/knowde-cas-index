@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Panel - Chemical CAS Search</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: #f8f9fa;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .main-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .header-section {
+            background: #e9ecef;
+            border-radius: 8px 8px 0 0;
+            padding: 2rem;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .database-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease;
+            border: 1px solid #dee2e6;
+            margin-bottom: 1rem;
+        }
+        .database-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        .database-card.disabled {
+            opacity: 0.6;
+            background: #f8f9fa;
+        }
+        .update-btn {
+            background: #198754;
+            border: none;
+            transition: all 0.3s ease;
+        }
+        .update-btn:hover {
+            background: #157347;
+            transform: translateY(-1px);
+        }
+        .update-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .status-online {
+            background: #198754;
+        }
+        .status-offline {
+            background: #dc3545;
+        }
+        .status-updating {
+            background: #ffc107;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .loading-spinner {
+            display: none;
+        }
+        .success-message {
+            background: #198754;
+            color: white;
+            border-radius: 6px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        .error-message {
+            background: #dc3545;
+            color: white;
+            border-radius: 6px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        .info-badge {
+            background: #6c757d;
+            color: white;
+            border-radius: 4px;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <div class="main-container">
+            <!-- Header -->
+            <div class="header-section">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h1 class="display-6 fw-bold text-dark mb-2">
+                            <i class="fas fa-sync-alt me-3"></i>
+                            Update Panel
+                        </h1>
+                        <p class="text-muted mb-0">Manage and update chemical databases from Google Drive</p>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <a href="/" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Search
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="p-4">
+                <!-- Loading Spinner -->
+                <div class="loading-spinner text-center" id="loadingSpinner">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading database information...</p>
+                </div>
+
+                <!-- Messages -->
+                <div class="success-message" id="successMessage" style="display: none;"></div>
+                <div class="error-message" id="errorMessage" style="display: none;"></div>
+
+                <!-- Database List -->
+                <div id="databaseList">
+                    <h3 class="mb-4">
+                        <i class="fas fa-database me-2"></i>Available Databases
+                    </h3>
+                    
+                    <!-- TSCA Inventory Database -->
+                    <div class="database-card p-4">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="status-indicator status-online" id="tscainvStatus"></span>
+                                    <h4 class="mb-0">TSCA Inventory Database</h4>
+                                </div>
+                                <p class="text-muted mb-2">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Toxic Substances Control Act Inventory
+                                </p>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <small class="text-muted">
+                                            <i class="fas fa-clock me-1"></i>
+                                            Last Updated: <span id="tscainvLastUpdated">Loading...</span>
+                                        </small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <small class="text-muted">
+                                            <i class="fas fa-file-csv me-1"></i>
+                                            File Size: <span id="tscainvFileSize">Loading...</span>
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <button class="btn update-btn text-white" id="updateTscainvBtn" onclick="updateDatabase('tscainv')">
+                                    <i class="fas fa-sync-alt me-2"></i>Update Database
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PMNACC Database (Disabled) -->
+                    <div class="database-card p-4 disabled">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="status-indicator status-offline"></span>
+                                    <h4 class="mb-0 text-muted">PMNACC Database</h4>
+                                    <span class="info-badge ms-2">Coming Soon</span>
+                                </div>
+                                <p class="text-muted mb-2">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Premanufacture Notification Access
+                                </p>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <small class="text-muted">
+                                            <i class="fas fa-clock me-1"></i>
+                                            Last Updated: Not available
+                                        </small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <small class="text-muted">
+                                            <i class="fas fa-file-csv me-1"></i>
+                                            File Size: Not available
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <button class="btn btn-secondary" disabled>
+                                    <i class="fas fa-lock me-2"></i>Disabled
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Google Drive Info -->
+                <div class="mt-4 p-3 bg-light rounded">
+                    <h5><i class="fas fa-cloud me-2"></i>Google Drive Integration</h5>
+                    <p class="text-muted mb-2">
+                        Databases are stored and updated from Google Drive. Updates are processed automatically when new files are detected.
+                    </p>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <small class="text-muted">
+                                <i class="fas fa-check-circle me-1"></i>
+                                Automatic file detection
+                            </small>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted">
+                                <i class="fas fa-check-circle me-1"></i>
+                                Version control and backup
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // DOM elements
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const successMessage = document.getElementById('successMessage');
+        const errorMessage = document.getElementById('errorMessage');
+        const tscainvStatus = document.getElementById('tscainvStatus');
+        const tscainvLastUpdated = document.getElementById('tscainvLastUpdated');
+        const tscainvFileSize = document.getElementById('tscainvFileSize');
+        const updateTscainvBtn = document.getElementById('updateTscainvBtn');
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDatabaseInfo();
+        });
+
+        async function loadDatabaseInfo() {
+            showLoading(true);
+            try {
+                const response = await fetch('/api/database-info');
+                const data = await response.json();
+
+                if (response.ok) {
+                    updateDatabaseDisplay(data);
+                } else {
+                    showError('Failed to load database information');
+                }
+            } catch (error) {
+                console.error('Error loading database info:', error);
+                showError('Network error. Please try again.');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function updateDatabaseDisplay(data) {
+            // Update TSCAINV info
+            if (data.tscainv) {
+                tscainvLastUpdated.textContent = data.tscainv.last_updated;
+                
+                if (data.tscainv.file_info.success) {
+                    tscainvStatus.className = 'status-indicator status-online';
+                    tscainvFileSize.textContent = formatFileSize(data.tscainv.file_info.size);
+                } else {
+                    tscainvStatus.className = 'status-indicator status-offline';
+                    tscainvFileSize.textContent = 'Unavailable';
+                }
+            }
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 'Unknown') return 'Unknown';
+            
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            if (bytes === 0) return '0 Bytes';
+            
+            const i = Math.floor(Math.log(bytes) / Math.log(1024));
+            return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        async function updateDatabase(databaseKey) {
+            const button = document.getElementById(`update${databaseKey.charAt(0).toUpperCase() + databaseKey.slice(1)}Btn`);
+            const statusIndicator = document.getElementById(`${databaseKey}Status`);
+            
+            // Update UI to show updating state
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Updating...';
+            statusIndicator.className = 'status-indicator status-updating';
+            
+            try {
+                const response = await fetch('/api/update-database', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ database: databaseKey })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showSuccess(data.message);
+                    // Reload database info after successful update
+                    setTimeout(() => {
+                        loadDatabaseInfo();
+                    }, 2000);
+                } else {
+                    showError(data.error || 'Update failed');
+                    statusIndicator.className = 'status-indicator status-offline';
+                }
+            } catch (error) {
+                console.error('Update error:', error);
+                showError('Network error. Please try again.');
+                statusIndicator.className = 'status-indicator status-offline';
+            } finally {
+                // Reset button state
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-sync-alt me-2"></i>Update Database';
+            }
+        }
+
+        function showLoading(show) {
+            loadingSpinner.style.display = show ? 'block' : 'none';
+            if (show) {
+                hideMessages();
+            }
+        }
+
+        function showSuccess(message) {
+            successMessage.textContent = message;
+            successMessage.style.display = 'block';
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+        }
+
+        function hideMessages() {
+            successMessage.style.display = 'none';
+            errorMessage.style.display = 'none';
+        }
+    </script>
+</body>
+</html> 
