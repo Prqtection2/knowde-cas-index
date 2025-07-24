@@ -53,13 +53,32 @@ def load_data():
     global pmnacc_data, tscainv_data
     
     try:
-        # Load PMNACC data
-        pmnacc_data = pd.read_csv('PMNACC_012025.csv')
-        print(f"Loaded PMNACC data: {len(pmnacc_data)} records")
+        # Try to load from Google Drive first
+        tscainv_file_id = GOOGLE_DRIVE_FILES.get('tscainv', {}).get('file_id')
         
-        # Load TSCAINV data
-        tscainv_data = pd.read_csv('TSCAINV_012025.csv')
-        print(f"Loaded TSCAINV data: {len(tscainv_data)} records")
+        if tscainv_file_id and tscainv_file_id != 'YOUR_TSCAINV_FILE_ID_HERE':
+            # Try to load from Google Drive
+            try:
+                tscainv_url = f"https://drive.google.com/uc?export=download&id={tscainv_file_id}"
+                tscainv_data = pd.read_csv(tscainv_url)
+                print(f"Loaded TSCAINV data from Google Drive: {len(tscainv_data)} records")
+            except Exception as e:
+                print(f"Failed to load TSCAINV from Google Drive: {e}")
+                # Fallback to local file
+                tscainv_data = pd.read_csv('TSCAINV_012025.csv')
+                print(f"Loaded TSCAINV data from local file: {len(tscainv_data)} records")
+        else:
+            # Load from local files
+            tscainv_data = pd.read_csv('TSCAINV_012025.csv')
+            print(f"Loaded TSCAINV data from local file: {len(tscainv_data)} records")
+        
+        # Load PMNACC data (local only for now)
+        try:
+            pmnacc_data = pd.read_csv('PMNACC_012025.csv')
+            print(f"Loaded PMNACC data: {len(pmnacc_data)} records")
+        except Exception as e:
+            print(f"Warning: Could not load PMNACC data: {e}")
+            pmnacc_data = None
         
         return True
     except Exception as e:
@@ -298,8 +317,12 @@ def database_info():
                 file_info = get_google_drive_file_info(db_info)
                 info[key] = {
                     'name': db_info['name'],
-                    'last_updated': db_info['last_updated'],
-                    'file_info': file_info
+                    'last_updated': db_info.get('last_updated', 'Unknown'),
+                    'file_info': file_info,
+                    'local_loaded': {
+                        'tscainv': tscainv_data is not None,
+                        'pmnacc': pmnacc_data is not None
+                    }[key] if key in ['tscainv', 'pmnacc'] else False
                 }
         
         return jsonify(info)
@@ -310,7 +333,23 @@ def database_info():
 @app.route('/api/health')
 def health_check():
     """Health check endpoint"""
-    return jsonify({'status': 'healthy', 'data_loaded': pmnacc_data is not None and tscainv_data is not None})
+    global pmnacc_data, tscainv_data
+    
+    status = {
+        'status': 'healthy',
+        'data_loaded': {
+            'tscainv': tscainv_data is not None,
+            'pmnacc': pmnacc_data is not None
+        },
+        'record_counts': {
+            'tscainv': len(tscainv_data) if tscainv_data is not None else 0,
+            'pmnacc': len(pmnacc_data) if pmnacc_data is not None else 0
+        },
+        'total_records': (len(tscainv_data) if tscainv_data is not None else 0) + 
+                        (len(pmnacc_data) if pmnacc_data is not None else 0)
+    }
+    
+    return jsonify(status)
 
 if __name__ == '__main__':
     # Load data on startup
