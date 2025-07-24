@@ -92,18 +92,33 @@ def load_data():
     try:
         print("Starting data load...")
         
+        # Check if files exist
+        import os
+        print(f"Current working directory: {os.getcwd()}")
+        print(f"Files in current directory: {os.listdir('.')}")
+        
         # Load TSCAINV data first (main database)
         try:
-            tscainv_data = pd.read_csv('TSCAINV_012025.csv')
-            print(f"✓ Loaded TSCAINV data: {len(tscainv_data)} records")
+            if os.path.exists('TSCAINV_012025.csv'):
+                print("✓ TSCAINV_012025.csv file found")
+                tscainv_data = pd.read_csv('TSCAINV_012025.csv')
+                print(f"✓ Loaded TSCAINV data: {len(tscainv_data)} records")
+            else:
+                print("✗ TSCAINV_012025.csv file NOT found")
+                tscainv_data = None
         except Exception as e:
             print(f"✗ Failed to load TSCAINV data: {e}")
             tscainv_data = None
         
         # Load PMNACC data
         try:
-            pmnacc_data = pd.read_csv('PMNACC_012025.csv')
-            print(f"✓ Loaded PMNACC data: {len(pmnacc_data)} records")
+            if os.path.exists('PMNACC_012025.csv'):
+                print("✓ PMNACC_012025.csv file found")
+                pmnacc_data = pd.read_csv('PMNACC_012025.csv')
+                print(f"✓ Loaded PMNACC data: {len(pmnacc_data)} records")
+            else:
+                print("✗ PMNACC_012025.csv file NOT found")
+                pmnacc_data = None
         except Exception as e:
             print(f"✗ Failed to load PMNACC data: {e}")
             pmnacc_data = None
@@ -487,11 +502,19 @@ def debug_search(cas_number):
 @app.route('/api/test-data')
 def test_data():
     """Test endpoint to check data loading"""
+    import os
+    
     result = {
         'tscainv_loaded': tscainv_data is not None,
         'pmnacc_loaded': pmnacc_data is not None,
         'tscainv_count': len(tscainv_data) if tscainv_data is not None else 0,
         'pmnacc_count': len(pmnacc_data) if pmnacc_data is not None else 0,
+        'file_system': {
+            'current_directory': os.getcwd(),
+            'files_in_directory': os.listdir('.'),
+            'tscainv_exists': os.path.exists('TSCAINV_012025.csv'),
+            'pmnacc_exists': os.path.exists('PMNACC_012025.csv')
+        }
     }
     
     if tscainv_data is not None:
