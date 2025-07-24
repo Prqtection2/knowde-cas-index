@@ -484,6 +484,38 @@ def debug_search(cas_number):
     except Exception as e:
         return jsonify({'error': f'Debug error: {str(e)}'}), 500
 
+@app.route('/api/test-data')
+def test_data():
+    """Test endpoint to check data loading"""
+    result = {
+        'tscainv_loaded': tscainv_data is not None,
+        'pmnacc_loaded': pmnacc_data is not None,
+        'tscainv_count': len(tscainv_data) if tscainv_data is not None else 0,
+        'pmnacc_count': len(pmnacc_data) if pmnacc_data is not None else 0,
+    }
+    
+    if tscainv_data is not None:
+        result['tscainv_sample'] = {
+            'columns': list(tscainv_data.columns),
+            'first_5_casregno': tscainv_data['casregno'].head(5).tolist(),
+            'first_5_CASRN': tscainv_data['CASRN'].head(5).tolist(),
+            'casregno_dtype': str(tscainv_data['casregno'].dtype),
+            'CASRN_dtype': str(tscainv_data['CASRN'].dtype)
+        }
+        
+        # Check if 110203 exists
+        cas_110203 = tscainv_data[tscainv_data['casregno'] == 110203]
+        result['cas_110203_exists'] = len(cas_110203) > 0
+        if len(cas_110203) > 0:
+            result['cas_110203_data'] = {
+                'casregno': cas_110203.iloc[0]['casregno'],
+                'CASRN': cas_110203.iloc[0]['CASRN'],
+                'ChemName': cas_110203.iloc[0]['ChemName'],
+                'ACTIVITY': cas_110203.iloc[0]['ACTIVITY']
+            }
+    
+    return jsonify(result)
+
 if __name__ == '__main__':
     # Load data on startup
     if load_data():
