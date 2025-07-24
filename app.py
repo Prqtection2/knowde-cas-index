@@ -48,6 +48,43 @@ tscainv_data = None
 # Use configuration from config.py
 GOOGLE_DRIVE_FILES = GOOGLE_DRIVE_CONFIG
 
+# Flag definitions for TSCA database
+FLAG_DEFINITIONS = {
+    '5E': 'Indicates a substance that is the subject of a TSCA section 5(e) order.',
+    '5F': 'Indicates a substance that is the subject of a TSCA section 5(f) rule.',
+    '12C': 'Indicates a substance that is prohibited to be exported from the United States under TSCA section 12(c).',
+    'FRI': 'Indicates a polymeric substance containing no free-radical initiator in its Inventory name but is considered to cover the designated polymer made with any free-radical initiator regardless of the amount used.',
+    'PE1': 'Indicates a polymer that has a number-average molecular weight of greater than or equal to 1,000 daltons and less than 10,000 daltons and that is exempt under the 1995 polymer exemption rule. The polymer\'s oligomer content must be less than 10 percent by weight below 500 daltons and less than 25 percent by weight below 1,000 daltons.',
+    'PE2': 'Indicates a polymer that has a number-average molecular weight of greater than or equal to 10,000 daltons and that is exempt under the 1995 polymer exemption rule. The polymer\'s oligomer content must be less than 2 percent by weight below 500 daltons and less than 5 percent by weight below 1,000 daltons.',
+    'PE3': 'Indicates a polymer that is a polyester and that is exempt under the 1995 polymer exemption rule. The polyester is made only from monomers and reactants included in a specified list that comprises one of the eligibility criteria for the 1995 polymer exemption rule.',
+    'PMN': 'Indicates a commenced PMN substance.',
+    'R': 'Indicates a substance that is the subject of a proposed or final TSCA section 6 risk management rule.',
+    'S': 'Indicates a substance that is identified in a final Significant New Use Rule.',
+    'SP': 'Indicates a substance that is identified in a proposed Significant New Use Rule.',
+    'T': 'Indicates a substance that is the subject of a final TSCA section 4 test rule or order.',
+    'TP': 'Indicates a substance that is the subject of a proposed TSCA section 4 test rule or order.',
+    'XU': 'Indicates a substance exempt from reporting under the Chemical Data Reporting Rule, (40 CFR 711).',
+    'Y1': 'Indicates a polymer that has a number-average molecular weight greater than 1,000 and that was exempt under the 1984 polymer exemption rule.',
+    'Y2': 'Indicates a polymer that is a polyester and that was exempt under the 1984 polymer exemption rule. The polyester is made only from reactants included in a specified list of low-concern reactants that comprises one of the eligibility criteria for the 1984 polymer exemption rule.'
+}
+
+def get_flag_description(flag):
+    """Get description for a flag or list of flags"""
+    if pd.isna(flag) or not flag:
+        return "No flag information available"
+    
+    # Split flags if multiple (e.g., "PMN; S; 5E")
+    flags = [f.strip() for f in str(flag).split(';')]
+    
+    descriptions = []
+    for f in flags:
+        if f in FLAG_DEFINITIONS:
+            descriptions.append(f"{f}: {FLAG_DEFINITIONS[f]}")
+        else:
+            descriptions.append(f"{f}: Flag description not available")
+    
+    return "; ".join(descriptions)
+
 def load_data():
     """Load CSV data files into memory"""
     global pmnacc_data, tscainv_data
@@ -117,6 +154,7 @@ def search_cas_number(normalized_cas):
                     'casNumber': row['ACCNO'],
                     'chemicalName': row['GenericName'],
                     'flag': row['FLAG'],
+                    'flagDescription': get_flag_description(row['FLAG']),
                     'activity': row['ACTIVITY']
                 })
     
@@ -143,6 +181,7 @@ def search_cas_number(normalized_cas):
                     'casNumber': row['CASRN'] if pd.notna(row['CASRN']) else row['casregno'],
                     'chemicalName': row['ChemName'],
                     'flag': row['FLAG'],
+                    'flagDescription': get_flag_description(row['FLAG']),
                     'activity': row['ACTIVITY']
                 })
     
@@ -225,6 +264,11 @@ def index():
 def update_panel():
     """Update panel page"""
     return render_template('update_panel.html', databases=GOOGLE_DRIVE_FILES)
+
+@app.route('/flag-definitions')
+def flag_definitions():
+    """Flag definitions page"""
+    return render_template('flag_definitions.html', flag_definitions=FLAG_DEFINITIONS)
 
 @app.route('/api/search', methods=['POST'])
 def search():

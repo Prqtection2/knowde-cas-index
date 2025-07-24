@@ -113,9 +113,17 @@
               <i class="fas fa-flask me-3"></i>
               Chemical CAS Number Search
             </h1>
-            <a href="/update-panel" class="btn btn-outline-secondary btn-sm">
-              <i class="fas fa-sync-alt me-1"></i>Update Panel
-            </a>
+            <div>
+              <a
+                href="/flag-definitions"
+                class="btn btn-outline-info btn-sm me-2"
+              >
+                <i class="fas fa-flag me-1"></i>Flag Definitions
+              </a>
+              <a href="/update-panel" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-sync-alt me-1"></i>Update Panel
+              </a>
+            </div>
           </div>
           <p class="lead text-muted">
             Search for chemical information by CAS number
@@ -483,7 +491,11 @@
                         </div>
                         <div class="col-md-4 text-end">
                             <div class="mb-2">
-                                <span class="flag-badge">
+                                <span class="flag-badge" data-bs-toggle="tooltip" data-bs-placement="top" 
+                                      title="${
+                                        result.flagDescription ||
+                                        "No flag description available"
+                                      }">
                                     <i class="fas fa-flag me-1"></i>${
                                       result.flag || "N/A"
                                     }
@@ -505,10 +517,34 @@
                             </div>
                         </div>
                     </div>
+                    ${
+                      result.flagDescription &&
+                      result.flagDescription !== "No flag information available"
+                        ? `
+                    <div class="mt-3 pt-3 border-top">
+                        <div class="d-flex align-items-start">
+                            <i class="fas fa-info-circle text-primary mt-1 me-2"></i>
+                            <div>
+                                <strong>Flag Description:</strong>
+                                <p class="text-muted mb-0 small">${result.flagDescription}</p>
+                            </div>
+                        </div>
+                    </div>
+                    `
+                        : ""
+                    }
                 </div>
             `
           )
           .join("");
+
+        // Initialize tooltips for the new content
+        const tooltipTriggerList = [].slice.call(
+          document.querySelectorAll('[data-bs-toggle="tooltip"]')
+        );
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+          return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
       }
 
       function removeDuplicateResults(results) {

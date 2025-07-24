@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Flag Definitions - Chemical CAS Search</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        background: #f8f9fa;
+        min-height: 100vh;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+      .main-container {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      .flag-card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s ease;
+        border: 1px solid #dee2e6;
+        margin-bottom: 1rem;
+      }
+      .flag-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+      .flag-badge {
+        background: #6c757d;
+        color: white;
+        border-radius: 4px;
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+        display: inline-block;
+        margin-bottom: 0.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container py-5">
+      <div class="main-container p-4">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <div>
+            <h1 class="display-5 fw-bold text-dark">
+              <i class="fas fa-flag me-3"></i>
+              TSCA Flag Definitions
+            </h1>
+            <p class="lead text-muted">
+              Complete guide to TSCA database flags and their meanings
+            </p>
+          </div>
+          <div>
+            <a href="/" class="btn btn-outline-secondary me-2">
+              <i class="fas fa-arrow-left me-2"></i>Back to Search
+            </a>
+            <a href="/update-panel" class="btn btn-outline-primary">
+              <i class="fas fa-sync-alt me-2"></i>Update Panel
+            </a>
+          </div>
+        </div>
+
+        <!-- Introduction -->
+        <div class="alert alert-info mb-4">
+          <h5><i class="fas fa-info-circle me-2"></i>About TSCA Flags</h5>
+          <p class="mb-0">
+            TSCA (Toxic Substances Control Act) flags indicate specific
+            regulatory status, exemptions, or restrictions for chemical
+            substances. These flags help users understand the regulatory context
+            of each chemical in the database.
+          </p>
+        </div>
+
+        <!-- Flag Definitions -->
+        <div class="row">
+          <div class="col-12">
+            <h3 class="mb-4">
+              <i class="fas fa-list me-2"></i>Flag Definitions
+            </h3>
+
+            <!-- 5E Flag -->
+            <div class="flag-card p-4">
+              <div class="d-flex align-items-start">
+                <span class="flag-badge me-3">5E</span>
+                <div>
+                  <h5 class="mb-2">TSCA Section 5(e) Order</h5>
+                  <p class="text-muted mb-0">
+                    Indicates a substance that is the subject of a TSCA section
+                    5(e) order.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- 5F Flag -->
+            <div class="flag-card p-4">
+              <div class="d-flex align-items-start">
+                <span class="flag-badge me-3">5F</span>
+                <div>
+                  <h5 class="mb-2">TSCA Section 5(f) Rule</h5>
+                  <p class="text-muted mb-0">
+                    Indicates a substance that is the subject of a TSCA section
+                    5(f) rule.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- 12C Flag -->
+            <div class="flag-card p-4">
+              <div class="d-flex align-items-start">
+                <span class="flag-badge me-3">12C</span>
+                <div>
+                  <h5 class="mb-2">Export Prohibition</h5>
+                  <p class="text-muted mb-0">
+                    Indicates a substance that is prohibited to be exported from
+                    the United States under TSCA section 12(c).
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- FRI Flag -->
+            <div class="flag-card p-4">
+              <div class="d-flex align-items-start">
+                <span class="flag-badge me-3">FRI</span>
+                <div>
+                  <h5 class="mb-2">Free-Radical Initiator</h5>
+                  <p class="text-muted mb-0">
+                    Indicates a polymeric substance containing no free-radical
+                    initiator in its Inventory name but is considered to cover
+                    the designated polymer made with any free-radical initiator
+                    regardless of the amount used.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- PE1 Flag -->
+            <div class="flag-card p-4">
+              <div class="d-flex align-items-start">
+                <span class="flag-badge me-3">PE1</span>
+                <div>
+                  <h5 class="mb-2">
+                    1995 Polymer Exemption (1,000-10,000 daltons)
+                  </h5>
+                  <p class="text-muted mb-0">
+                    Indicates a polymer that has a number-average molecular
+                    weight of greater than or equal to 1,000 daltons and less
+                    than 10,000 daltons and that is exempt under the 1995
+                    polymer exemption rule. The polymer's oligomer content must
+                    be less than 10 percent by weight below 500 daltons and less
+                    than 25 percent by weight below 1,000 daltons.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- PE2 Flag -->
+            <div class="flag-card p-4">
+              <div class="d-flex align-items-start">
+                <span class="flag-badge me-3">PE2</span>
+                <div>
+                  <h5 class="mb-2">1995 Polymer Exemption (≥10,000 daltons)</h5>
+                  <p class="text-muted mb-0">
+                    Indicates a polymer that has a number-average molecular
+                    weight of greater than or equal to 10,000 daltons and that
+                    is exempt under the 1995 polymer exemption rule. The
+                    polymer's oligomer content must be less than 2 percent by
+                    weight below 500 daltons and less than 5 percent by weight
+                    below 1,000 daltons.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- PE3 Flag -->
+            <div class="flag-card p-4">
+              <div class="d-flex align-items-start">
+                <span class="flag-badge me-3">PE3</span>
+                <div>
+                  <h5 class="mb-2">1995 Polymer Exemption (Polyester)</h5>
+                  <p class="text-muted mb-0">
+                    Indicates a polymer that is a polyester and that is exempt
+                    under the 1995 polymer exemption rule. The polyester is made
+                    only from monomers and reactants included in a specified
+                    list that comprises one of the eligibility criteria for the
+                    1995 polymer exemption rule.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- PMN Flag -->
+            <div class="flag-card p-4">
+              <div class="d-flex align-items-start">
+                <span class="flag-badge me-3">PMN</span>
+                <div>
+                  <h5 class="mb-2">Premanufacture Notification</h5>
+                  <p class="text-muted mb-0">
+                    Indicates a commenced PMN substance.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- R Flag -->
+            <div class="flag-card p-4">
+              <div class="d-flex align-items-start">
+                <span class="flag-badge me-3">R</span>
+                <div>
+                  <h5 class="mb-2">Risk Management Rule</h5>
+                  <p class="text-muted mb-0">
+                    Indicates a substance that is the subject of a proposed or
+                    final TSCA section 6 risk management rule.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- S Flag -->
+            <div class="flag-card p-4">
+              <div class="d-flex align-items-start">
+                <span class="flag-badge me-3">S</span>
+                <div>
+                  <h5 class="mb-2">Significant New Use Rule (Final)</h5>
+                  <p class="text-muted mb-0">
+                    Indicates a substance that is identified in a final
+                    Significant New Use Rule.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- SP Flag -->
+            <div class="flag-card p-4">
+              <div class="d-flex align-items-start">
+                <span class="flag-badge me-3">SP</span>
+                <div>
+                  <h5 class="mb-2">Significant New Use Rule (Proposed)</h5>
+                  <p class="text-muted mb-0">
+                    Indicates a substance that is identified in a proposed
+                    Significant New Use Rule.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- T Flag -->
+            <div class="flag-card p-4">
+              <div class="d-flex align-items-start">
+                <span class="flag-badge me-3">T</span>
+                <div>
+                  <h5 class="mb-2">Test Rule (Final)</h5>
+                  <p class="text-muted mb-0">
+                    Indicates a substance that is the subject of a final TSCA
+                    section 4 test rule or order.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- TP Flag -->
+            <div class="flag-card p-4">
+              <div class="d-flex align-items-start">
+                <span class="flag-badge me-3">TP</span>
+                <div>
+                  <h5 class="mb-2">Test Rule (Proposed)</h5>
+                  <p class="text-muted mb-0">
+                    Indicates a substance that is the subject of a proposed TSCA
+                    section 4 test rule or order.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- XU Flag -->
+            <div class="flag-card p-4">
+              <div class="d-flex align-items-start">
+                <span class="flag-badge me-3">XU</span>
+                <div>
+                  <h5 class="mb-2">Chemical Data Reporting Exemption</h5>
+                  <p class="text-muted mb-0">
+                    Indicates a substance exempt from reporting under the
+                    Chemical Data Reporting Rule, (40 CFR 711).
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Y1 Flag -->
+            <div class="flag-card p-4">
+              <div class="d-flex align-items-start">
+                <span class="flag-badge me-3">Y1</span>
+                <div>
+                  <h5 class="mb-2">1984 Polymer Exemption (>1,000 daltons)</h5>
+                  <p class="text-muted mb-0">
+                    Indicates a polymer that has a number-average molecular
+                    weight greater than 1,000 and that was exempt under the 1984
+                    polymer exemption rule.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Y2 Flag -->
+            <div class="flag-card p-4">
+              <div class="d-flex align-items-start">
+                <span class="flag-badge me-3">Y2</span>
+                <div>
+                  <h5 class="mb-2">1984 Polymer Exemption (Polyester)</h5>
+                  <p class="text-muted mb-0">
+                    Indicates a polymer that is a polyester and that was exempt
+                    under the 1984 polymer exemption rule. The polyester is made
+                    only from reactants included in a specified list of
+                    low-concern reactants that comprises one of the eligibility
+                    criteria for the 1984 polymer exemption rule.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>
