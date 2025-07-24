@@ -90,36 +90,34 @@ def load_data():
     global pmnacc_data, tscainv_data
     
     try:
-        # Try to load from Google Drive first
-        tscainv_file_id = GOOGLE_DRIVE_FILES.get('tscainv', {}).get('file_id')
+        print("Starting data load...")
         
-        if tscainv_file_id and tscainv_file_id != 'YOUR_TSCAINV_FILE_ID_HERE':
-            # Try to load from Google Drive
-            try:
-                tscainv_url = f"https://drive.google.com/uc?export=download&id={tscainv_file_id}"
-                tscainv_data = pd.read_csv(tscainv_url)
-                print(f"Loaded TSCAINV data from Google Drive: {len(tscainv_data)} records")
-            except Exception as e:
-                print(f"Failed to load TSCAINV from Google Drive: {e}")
-                # Fallback to local file
-                tscainv_data = pd.read_csv('TSCAINV_012025.csv')
-                print(f"Loaded TSCAINV data from local file: {len(tscainv_data)} records")
-        else:
-            # Load from local files
+        # Load TSCAINV data first (main database)
+        try:
             tscainv_data = pd.read_csv('TSCAINV_012025.csv')
-            print(f"Loaded TSCAINV data from local file: {len(tscainv_data)} records")
+            print(f"✓ Loaded TSCAINV data: {len(tscainv_data)} records")
+        except Exception as e:
+            print(f"✗ Failed to load TSCAINV data: {e}")
+            tscainv_data = None
         
-        # Load PMNACC data (local only for now)
+        # Load PMNACC data
         try:
             pmnacc_data = pd.read_csv('PMNACC_012025.csv')
-            print(f"Loaded PMNACC data: {len(pmnacc_data)} records")
+            print(f"✓ Loaded PMNACC data: {len(pmnacc_data)} records")
         except Exception as e:
-            print(f"Warning: Could not load PMNACC data: {e}")
+            print(f"✗ Failed to load PMNACC data: {e}")
             pmnacc_data = None
         
+        # Check if at least one database loaded
+        if tscainv_data is None and pmnacc_data is None:
+            print("✗ No databases loaded successfully")
+            return False
+        
+        print("✓ Data loading completed")
         return True
+        
     except Exception as e:
-        print(f"Error loading data: {e}")
+        print(f"✗ Critical error loading data: {e}")
         return False
 
 def normalize_cas_number(cas_number):
