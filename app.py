@@ -169,6 +169,10 @@ def search_cas_number(normalized_cas):
     results = []
     
     print(f"Searching for normalized CAS: '{normalized_cas}'")
+    print(f"TSCAINV data loaded: {tscainv_data is not None}")
+    if tscainv_data is not None:
+        print(f"TSCAINV data shape: {tscainv_data.shape}")
+        print(f"TSCAINV columns: {list(tscainv_data.columns)}")
     
     # Search in PMNACC data
     if pmnacc_data is not None:
@@ -198,9 +202,9 @@ def search_cas_number(normalized_cas):
     if tscainv_data is not None:
         print(f"TSCAINV data available: {len(tscainv_data)} records")
         
-        # Convert casregno to string for comparison
-        tscainv_data['casregno_str'] = tscainv_data['casregno'].astype(str)
-        tscainv_data['CASRN_str'] = tscainv_data['CASRN'].astype(str)
+        # Convert casregno to string for comparison and handle NaN values
+        tscainv_data['casregno_str'] = tscainv_data['casregno'].fillna('').astype(str)
+        tscainv_data['CASRN_str'] = tscainv_data['CASRN'].fillna('').astype(str)
         
         # Check if the exact CAS number exists in the data
         exact_match_casregno = tscainv_data[tscainv_data['casregno_str'] == normalized_cas]
@@ -233,6 +237,8 @@ def search_cas_number(normalized_cas):
                     'flagDescription': get_flag_description(row['FLAG']),
                     'activity': row['ACTIVITY']
                 })
+    else:
+        print("TSCAINV data is None - not loaded properly")
     
     print(f"Total results found: {len(results)}")
     return results
@@ -600,6 +606,49 @@ def test_google_drive():
         else:
             result['is_csv'] = False
             
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
+@app.route('/api/test-cas/<cas_number>')
+def test_cas_number(cas_number):
+    """Test if a specific CAS number exists in the loaded data"""
+    try:
+        result = {
+            'cas_number': cas_number,
+            'normalized_cas': normalize_cas_number(cas_number),
+            'tscainv_loaded': tscainv_data is not None,
+            'pmnacc_loaded': pmnacc_data is not None
+        }
+        
+        if tscainv_data is not None:
+            # Convert to string and handle NaN
+            tscainv_data['casregno_str'] = tscainv_data['casregno'].fillna('').astype(str)
+            tscainv_data['CASRN_str'] = tscainv_data['CASRN'].fillna('').astype(str)
+            
+            normalized_cas = normalize_cas_number(cas_number)
+            
+            # Check exact matches
+            exact_casregno = tscainv_data[tscainv_data['casregno_str'] == normalized_cas]
+            exact_CASRN = tscainv_data[tscainv_data['CASRN_str'] == normalized_cas]
+            
+            result['tscainv'] = {
+                'total_records': len(tscainv_data),
+                'exact_casregno_matches': len(exact_casregno),
+                'exact_CASRN_matches': len(exact_CASRN),
+                'sample_casregno': tscainv_data['casregno_str'].head(5).tolist(),
+                'sample_CASRN': tscainv_data['CASRN_str'].head(5).tolist()
+            }
+            
+            if len(exact_casregno) > 0:
+                result['tscainv']['found_data'] = {
+                    'casregno': exact_casregno.iloc[0]['casregno'],
+                    'CASRN': exact_casregno.iloc[0]['CASRN'],
+                    'ChemName': exact_casregno.iloc[0]['ChemName'],
+                    'ACTIVITY': exact_casregno.iloc[0]['ACTIVITY']
+                }
+        
         return jsonify(result)
         
     except Exception as e:
