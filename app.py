@@ -91,15 +91,24 @@ def normalize_cas_number(cas_number):
         return ""
     return str(cas_number).replace('-', '').replace(' ', '')
 
-def search_cas_number(normalized_cas, database='all'):
+def search_cas_number(normalized_cas):
     """Search for CAS number in specified database(s)"""
     results = []
     
+    print(f"Searching for normalized CAS: '{normalized_cas}'")
+    
     # Search in PMNACC data
-    if database in ['pmnacc', 'all'] and pmnacc_data is not None:
+    if pmnacc_data is not None:
+        print(f"PMNACC data available: {len(pmnacc_data)} records")
+        # Check a few sample CAS numbers for debugging
+        sample_cas = pmnacc_data['ACCNO'].head(5).tolist()
+        print(f"Sample PMNACC CAS numbers: {sample_cas}")
+        
         pmnacc_match = pmnacc_data[
             pmnacc_data['ACCNO'].apply(lambda x: normalize_cas_number(x) == normalized_cas)
         ]
+        
+        print(f"PMNACC matches found: {len(pmnacc_match)}")
         
         if not pmnacc_match.empty:
             for _, row in pmnacc_match.iterrows():
@@ -112,11 +121,20 @@ def search_cas_number(normalized_cas, database='all'):
                 })
     
     # Search in TSCAINV data
-    if database in ['tscainv', 'all'] and tscainv_data is not None:
+    if tscainv_data is not None:
+        print(f"TSCAINV data available: {len(tscainv_data)} records")
+        # Check a few sample CAS numbers for debugging
+        sample_cas = tscainv_data['casregno'].head(5).tolist()
+        print(f"Sample TSCAINV casregno: {sample_cas}")
+        sample_casrn = tscainv_data['CASRN'].head(5).tolist()
+        print(f"Sample TSCAINV CASRN: {sample_casrn}")
+        
         tscainv_match = tscainv_data[
             (tscainv_data['casregno'].apply(lambda x: normalize_cas_number(x) == normalized_cas)) |
             (tscainv_data['CASRN'].apply(lambda x: normalize_cas_number(x) == normalized_cas))
         ]
+        
+        print(f"TSCAINV matches found: {len(tscainv_match)}")
         
         if not tscainv_match.empty:
             for _, row in tscainv_match.iterrows():
@@ -128,6 +146,7 @@ def search_cas_number(normalized_cas, database='all'):
                     'activity': row['ACTIVITY']
                 })
     
+    print(f"Total results found: {len(results)}")
     return results
 
 def extract_cas_numbers_from_file(file_content, filename):
@@ -219,7 +238,7 @@ def search():
             return jsonify({'error': 'Please provide a CAS number'}), 400
         
         normalized_cas = normalize_cas_number(cas_number)
-        results = search_cas_number(normalized_cas, database)
+        results = search_cas_number(normalized_cas)
         
         if not results:
             return jsonify({'error': f'No results found for CAS number: {cas_number}'}), 404
@@ -255,7 +274,7 @@ def upload_file():
         # Search for all CAS numbers
         all_results = []
         for cas in cas_numbers:
-            results = search_cas_number(cas, database)
+            results = search_cas_number(cas)
             all_results.extend(results)
         
         if not all_results:
@@ -350,6 +369,65 @@ def health_check():
     }
     
     return jsonify(status)
+
+@app.route('/api/debug/<cas_number>')
+def debug_search(cas_number):
+    """Debug endpoint to test CAS number search"""
+    try:
+        normalized_cas = normalize_cas_number(cas_number)
+        
+        debug_info = {
+            'original_cas': cas_number,
+            'normalized_cas': normalized_cas,
+            'data_loaded': {
+                'tscainv': tscainv_data is not None,
+                'pmnacc': pmnacc_data is not None
+            }
+        }
+        
+        if tscainv_data is not None:
+            debug_info['tscainv_info'] = {
+                'total_records': len(tscainv_data),
+                'sample_casregno': tscainv_data['casregno'].head(10).tolist(),
+                'sample_casrn': tscainv_data['CASRN'].head(10).tolist(),
+                'columns': list(tscainv_data.columns)
+            }
+            
+            # Check for exact matches
+            exact_matches = tscainv_data[
+                (tscainv_data['casregno'] == normalized_cas) |
+                (tscainv_data['CASRN'] == normalized_cas)
+            ]
+            debug_info['tscainv_exact_matches'] = len(exact_matches)
+            
+            # Check for normalized matches
+            normalized_matches = tscainv_data[
+                (tscainv_data['casregno'].apply(lambda x: normalize_cas_number(x) == normalized_cas)) |
+                (tscainv_data['CASRN'].apply(lambda x: normalize_cas_number(x) == normalized_cas))
+            ]
+            debug_info['tscainv_normalized_matches'] = len(normalized_matches)
+        
+        if pmnacc_data is not None:
+            debug_info['pmnacc_info'] = {
+                'total_records': len(pmnacc_data),
+                'sample_accno': pmnacc_data['ACCNO'].head(10).tolist(),
+                'columns': list(pmnacc_data.columns)
+            }
+            
+            # Check for exact matches
+            exact_matches = pmnacc_data[pmnacc_data['ACCNO'] == normalized_cas]
+            debug_info['pmnacc_exact_matches'] = len(exact_matches)
+            
+            # Check for normalized matches
+            normalized_matches = pmnacc_data[
+                pmnacc_data['ACCNO'].apply(lambda x: normalize_cas_number(x) == normalized_cas)
+            ]
+            debug_info['pmnacc_normalized_matches'] = len(normalized_matches)
+        
+        return jsonify(debug_info)
+    
+    except Exception as e:
+        return jsonify({'error': f'Debug error: {str(e)}'}), 500
 
 if __name__ == '__main__':
     # Load data on startup
