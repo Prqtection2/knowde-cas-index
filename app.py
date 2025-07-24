@@ -159,18 +159,31 @@ def search_cas_number(normalized_cas):
     # Search in TSCAINV data
     if tscainv_data is not None:
         print(f"TSCAINV data available: {len(tscainv_data)} records")
+        
+        # Convert casregno to string for comparison
+        tscainv_data['casregno_str'] = tscainv_data['casregno'].astype(str)
+        tscainv_data['CASRN_str'] = tscainv_data['CASRN'].astype(str)
+        
+        # Check if the exact CAS number exists in the data
+        exact_match_casregno = tscainv_data[tscainv_data['casregno_str'] == normalized_cas]
+        exact_match_CASRN = tscainv_data[tscainv_data['CASRN_str'] == normalized_cas]
+        
+        print(f"Exact matches in casregno: {len(exact_match_casregno)}")
+        print(f"Exact matches in CASRN: {len(exact_match_CASRN)}")
+        
         # Check a few sample CAS numbers for debugging
-        sample_cas = tscainv_data['casregno'].head(5).tolist()
+        sample_cas = tscainv_data['casregno_str'].head(10).tolist()
         print(f"Sample TSCAINV casregno: {sample_cas}")
-        sample_casrn = tscainv_data['CASRN'].head(5).tolist()
+        sample_casrn = tscainv_data['CASRN_str'].head(10).tolist()
         print(f"Sample TSCAINV CASRN: {sample_casrn}")
         
+        # Try normalized search
         tscainv_match = tscainv_data[
-            (tscainv_data['casregno'].apply(lambda x: normalize_cas_number(x) == normalized_cas)) |
-            (tscainv_data['CASRN'].apply(lambda x: normalize_cas_number(x) == normalized_cas))
+            (tscainv_data['casregno_str'].apply(lambda x: normalize_cas_number(x) == normalized_cas)) |
+            (tscainv_data['CASRN_str'].apply(lambda x: normalize_cas_number(x) == normalized_cas))
         ]
         
-        print(f"TSCAINV matches found: {len(tscainv_match)}")
+        print(f"TSCAINV normalized matches found: {len(tscainv_match)}")
         
         if not tscainv_match.empty:
             for _, row in tscainv_match.iterrows():
