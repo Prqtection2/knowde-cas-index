@@ -183,11 +183,11 @@ def search_cas_number(normalized_cas):
             for _, row in pmnacc_match.iterrows():
                 results.append({
                     'source': 'PMNACC',
-                    'casNumber': row['ACCNO'],
-                    'chemicalName': row['GenericName'],
-                    'flag': row['FLAG'],
+                    'casNumber': str(row['ACCNO']) if pd.notna(row['ACCNO']) else '',
+                    'chemicalName': str(row['GenericName']) if pd.notna(row['GenericName']) else '',
+                    'flag': str(row['FLAG']) if pd.notna(row['FLAG']) else '',
                     'flagDescription': get_flag_description(row['FLAG']),
-                    'activity': row['ACTIVITY']
+                    'activity': str(row['ACTIVITY']) if pd.notna(row['ACTIVITY']) else ''
                 })
     
     # Search in TSCAINV data
@@ -223,11 +223,11 @@ def search_cas_number(normalized_cas):
             for _, row in tscainv_match.iterrows():
                 results.append({
                     'source': 'TSCAINV',
-                    'casNumber': row['CASRN'] if pd.notna(row['CASRN']) else row['casregno'],
-                    'chemicalName': row['ChemName'],
-                    'flag': row['FLAG'],
+                    'casNumber': str(row['CASRN']) if pd.notna(row['CASRN']) else str(row['casregno']) if pd.notna(row['casregno']) else '',
+                    'chemicalName': str(row['ChemName']) if pd.notna(row['ChemName']) else '',
+                    'flag': str(row['FLAG']) if pd.notna(row['FLAG']) else '',
                     'flagDescription': get_flag_description(row['FLAG']),
-                    'activity': row['ACTIVITY']
+                    'activity': str(row['ACTIVITY']) if pd.notna(row['ACTIVITY']) else ''
                 })
     else:
         print("TSCAINV data is None - not loaded properly")
@@ -528,8 +528,8 @@ def test_data():
     result = {
         'tscainv_loaded': tscainv_data is not None,
         'pmnacc_loaded': pmnacc_data is not None,
-        'tscainv_count': len(tscainv_data) if tscainv_data is not None else 0,
-        'pmnacc_count': len(pmnacc_data) if pmnacc_data is not None else 0,
+        'tscainv_count': int(len(tscainv_data)) if tscainv_data is not None else 0,
+        'pmnacc_count': int(len(pmnacc_data)) if pmnacc_data is not None else 0,
         'google_drive_config': {
             'tscainv_file_id': GOOGLE_DRIVE_FILES.get('tscainv', {}).get('file_id'),
             'tscainv_enabled': GOOGLE_DRIVE_FILES.get('tscainv', {}).get('enabled'),
@@ -547,8 +547,8 @@ def test_data():
     if tscainv_data is not None:
         result['tscainv_sample'] = {
             'columns': list(tscainv_data.columns),
-            'first_5_casregno': tscainv_data['casregno'].head(5).tolist(),
-            'first_5_CASRN': tscainv_data['CASRN'].head(5).tolist(),
+            'first_5_casregno': [str(x) for x in tscainv_data['casregno'].head(5).tolist()],
+            'first_5_CASRN': [str(x) for x in tscainv_data['CASRN'].head(5).tolist()],
             'casregno_dtype': str(tscainv_data['casregno'].dtype),
             'CASRN_dtype': str(tscainv_data['CASRN'].dtype)
         }
@@ -558,10 +558,10 @@ def test_data():
         result['cas_110203_exists'] = len(cas_110203) > 0
         if len(cas_110203) > 0:
             result['cas_110203_data'] = {
-                'casregno': cas_110203.iloc[0]['casregno'],
-                'CASRN': cas_110203.iloc[0]['CASRN'],
-                'ChemName': cas_110203.iloc[0]['ChemName'],
-                'ACTIVITY': cas_110203.iloc[0]['ACTIVITY']
+                'casregno': str(cas_110203.iloc[0]['casregno']) if pd.notna(cas_110203.iloc[0]['casregno']) else '',
+                'CASRN': str(cas_110203.iloc[0]['CASRN']) if pd.notna(cas_110203.iloc[0]['CASRN']) else '',
+                'ChemName': str(cas_110203.iloc[0]['ChemName']) if pd.notna(cas_110203.iloc[0]['ChemName']) else '',
+                'ACTIVITY': str(cas_110203.iloc[0]['ACTIVITY']) if pd.notna(cas_110203.iloc[0]['ACTIVITY']) else ''
             }
     
     return jsonify(result)
@@ -626,19 +626,19 @@ def test_cas_number(cas_number):
             exact_CASRN = tscainv_data[tscainv_data['CASRN_str'] == normalized_cas]
             
             result['tscainv'] = {
-                'total_records': len(tscainv_data),
-                'exact_casregno_matches': len(exact_casregno),
-                'exact_CASRN_matches': len(exact_CASRN),
+                'total_records': int(len(tscainv_data)),  # Convert to native Python int
+                'exact_casregno_matches': int(len(exact_casregno)),
+                'exact_CASRN_matches': int(len(exact_CASRN)),
                 'sample_casregno': tscainv_data['casregno_str'].head(5).tolist(),
                 'sample_CASRN': tscainv_data['CASRN_str'].head(5).tolist()
             }
             
             if len(exact_casregno) > 0:
                 result['tscainv']['found_data'] = {
-                    'casregno': exact_casregno.iloc[0]['casregno'],
-                    'CASRN': exact_casregno.iloc[0]['CASRN'],
-                    'ChemName': exact_casregno.iloc[0]['ChemName'],
-                    'ACTIVITY': exact_casregno.iloc[0]['ACTIVITY']
+                    'casregno': str(exact_casregno.iloc[0]['casregno']) if pd.notna(exact_casregno.iloc[0]['casregno']) else '',
+                    'CASRN': str(exact_casregno.iloc[0]['CASRN']) if pd.notna(exact_casregno.iloc[0]['CASRN']) else '',
+                    'ChemName': str(exact_casregno.iloc[0]['ChemName']) if pd.notna(exact_casregno.iloc[0]['ChemName']) else '',
+                    'ACTIVITY': str(exact_casregno.iloc[0]['ACTIVITY']) if pd.notna(exact_casregno.iloc[0]['ACTIVITY']) else ''
                 }
         
         return jsonify(result)
