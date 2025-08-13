@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify, send_file
 import pandas as pd
 import os
 import re
+import json
 from werkzeug.utils import secure_filename
 import io
 import tempfile
@@ -106,13 +107,22 @@ def load_data():
             headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
             
             response = requests.get(url, headers=headers, timeout=30)
-            if response.status_code == 200 and 'csv' in response.headers.get('content-type', '').lower():
-                # Create a StringIO object from the content
-                from io import StringIO
-                csv_content = StringIO(response.text)
-                tscainv_data = pd.read_csv(csv_content)
-                print(f"TSCA Inventory data loaded successfully. Shape: {tscainv_data.shape}")
-                print(f"TSCA Inventory columns: {list(tscainv_data.columns)}")
+            print(f"TSCA Response Status: {response.status_code}")
+            print(f"TSCA Content-Type: {response.headers.get('content-type', 'unknown')}")
+            print(f"TSCA Content Length: {len(response.content)}")
+            
+            if response.status_code == 200:
+                try:
+                    # Create a StringIO object from the content
+                    from io import StringIO
+                    csv_content = StringIO(response.text)
+                    tscainv_data = pd.read_csv(csv_content)
+                    print(f"TSCA Inventory data loaded successfully. Shape: {tscainv_data.shape}")
+                    print(f"TSCA Inventory columns: {list(tscainv_data.columns)}")
+                except Exception as csv_error:
+                    print(f"CSV parsing error for TSCA: {csv_error}")
+                    print(f"First 500 chars of response: {response.text[:500]}")
+                    tscainv_data = None
             else:
                 print(f"Failed to load TSCA Inventory from Google Drive. Status: {response.status_code}")
                 tscainv_data = None
@@ -157,12 +167,21 @@ def load_data():
             headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
             
             response = requests.get(url, headers=headers, timeout=30)
-            if response.status_code == 200 and 'csv' in response.headers.get('content-type', '').lower():
-                from io import StringIO
-                csv_content = StringIO(response.text)
-                kecl_data = pd.read_csv(csv_content)
-                print(f"KECL data loaded successfully. Shape: {kecl_data.shape}")
-                print(f"KECL columns: {list(kecl_data.columns)}")
+            print(f"KECL Response Status: {response.status_code}")
+            print(f"KECL Content-Type: {response.headers.get('content-type', 'unknown')}")
+            print(f"KECL Content Length: {len(response.content)}")
+            
+            if response.status_code == 200:
+                try:
+                    from io import StringIO
+                    csv_content = StringIO(response.text)
+                    kecl_data = pd.read_csv(csv_content)
+                    print(f"KECL data loaded successfully. Shape: {kecl_data.shape}")
+                    print(f"KECL columns: {list(kecl_data.columns)}")
+                except Exception as csv_error:
+                    print(f"CSV parsing error for KECL: {csv_error}")
+                    print(f"First 500 chars of response: {response.text[:500]}")
+                    kecl_data = None
             else:
                 print(f"Failed to load KECL from Google Drive. Status: {response.status_code}")
                 kecl_data = None
@@ -174,6 +193,9 @@ def load_data():
         kecl_data = None
     
     print("Data loading process completed.")
+    
+    # Return True if at least one database loaded successfully
+    return any([tscainv_data is not None, pmnacc_data is not None, kecl_data is not None])
 
 def normalize_cas_number(cas_number):
     """Remove dashes and spaces from CAS number"""
@@ -188,14 +210,10 @@ def search_cas_number(normalized_cas):
     # Search TSCA Inventory
     if tscainv_data is not None and GOOGLE_DRIVE_CONFIG['tscainv']['enabled']:
         try:
-            # Convert columns to string and handle NaN values
-            casregno_str = tscainv_data['casregno'].astype(str).fillna('')
-            casrn_str = tscainv_data['CASRN'].astype(str).fillna('')
-            
-            # Search in both casregno and CASRN columns
+            # Search in both casregno and CASRN columns using normalized comparison
             tsca_match = tscainv_data[
-                (casregno_str == normalized_cas) | 
-                (casrn_str == normalized_cas)
+                (tscainv_data['casregno'].apply(lambda x: normalize_cas_number(x) == normalized_cas)) |
+                (tscainv_data['CASRN'].apply(lambda x: normalize_cas_number(x) == normalized_cas))
             ]
             
             if not tsca_match.empty:
@@ -213,8 +231,9 @@ def search_cas_number(normalized_cas):
     # Search PMNACC
     if pmnacc_data is not None and GOOGLE_DRIVE_CONFIG['pmnacc']['enabled']:
         try:
-            accno_str = pmnacc_data['ACCNO'].astype(str).fillna('')
-            pmnacc_match = pmnacc_data[accno_str == normalized_cas]
+            pmnacc_match = pmnacc_data[
+                pmnacc_data['ACCNO'].apply(lambda x: normalize_cas_number(x) == normalized_cas)
+            ]
             
             if not pmnacc_match.empty:
                 for _, row in pmnacc_match.iterrows():
@@ -231,8 +250,9 @@ def search_cas_number(normalized_cas):
     # Search KECL
     if kecl_data is not None and GOOGLE_DRIVE_CONFIG['kecl']['enabled']:
         try:
-            cas_str = kecl_data['CAS No.'].astype(str).fillna('')
-            kecl_match = kecl_data[cas_str == normalized_cas]
+            kecl_match = kecl_data[
+                kecl_data['CAS No.'].apply(lambda x: normalize_cas_number(x) == normalized_cas)
+            ]
             
             if not kecl_match.empty:
                 for _, row in kecl_match.iterrows():
@@ -338,13 +358,23 @@ def search():
     try:
         data = request.get_json()
         cas_number = data.get('casNumber', '').strip()
-        database = data.get('database', 'all')
+        databases = data.get('databases', ['tscainv'])
         
         if not cas_number:
             return jsonify({'error': 'Please provide a CAS number'}), 400
         
         normalized_cas = normalize_cas_number(cas_number)
         results = search_cas_number(normalized_cas)
+        
+        # Filter results based on selected databases
+        if databases and 'all' not in databases:
+            # Map database keys to database names
+            db_mapping = {
+                'tscainv': 'TSCA Inventory',
+                'kecl': 'KECL (Korea)',
+                'pmnacc': 'PMNACC'
+            }
+            results = [r for r in results if any(r['database'] == db_mapping.get(db, db) for db in databases)]
         
         if not results:
             return jsonify({'error': f'No results found for CAS number: {cas_number}'}), 404
@@ -362,7 +392,11 @@ def upload_file():
             return jsonify({'error': 'No file provided'}), 400
         
         file = request.files['file']
-        database = request.form.get('database', 'all')
+        databases = request.form.get('databases', '["tscainv"]')
+        try:
+            databases = json.loads(databases)
+        except:
+            databases = ['tscainv']
         
         if file.filename == '':
             return jsonify({'error': 'No file selected'}), 400
@@ -382,6 +416,16 @@ def upload_file():
         for cas in cas_numbers:
             results = search_cas_number(cas)
             all_results.extend(results)
+        
+        # Filter results based on selected databases
+        if databases and 'all' not in databases:
+            # Map database keys to database names
+            db_mapping = {
+                'tscainv': 'TSCA Inventory',
+                'kecl': 'KECL (Korea)',
+                'pmnacc': 'PMNACC'
+            }
+            all_results = [r for r in all_results if any(r['database'] == db_mapping.get(db, db) for db in databases)]
         
         if not all_results:
             return jsonify({'error': 'No matching chemicals found for the CAS numbers in the uploaded file'}), 404
