@@ -265,6 +265,15 @@ def search_cas_number(normalized_cas):
                         'activity': status,
                         'cas_number': str(row['CAS No.'])
                     })
+            else:
+                # Chemical not found in KECL list = INACTIVE
+                results.append({
+                    'database': 'KECL (Korea)',
+                    'chemical_name': 'Not listed in KECL',
+                    'flag': 'N/A',
+                    'activity': 'INACTIVE',
+                    'cas_number': normalized_cas  # Use the normalized CAS number since it wasn't found
+                })
         except Exception as e:
             print(f"Error searching KECL data: {e}")
     
