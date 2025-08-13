@@ -162,6 +162,21 @@
                 </label>
               </div>
             </div>
+            <div class="col-md-6">
+              <div class="form-check">
+                <input
+                  class="form-check-input"
+                  type="radio"
+                  name="databaseSelect"
+                  id="keclRadio"
+                  value="kecl"
+                />
+                <label class="form-check-label" for="keclRadio">
+                  <strong>KECL Database</strong>
+                  <div class="database-info">Korea Existing Chemical List</div>
+                </label>
+              </div>
+            </div>
           </div>
           <div class="mt-3">
             <div class="form-check">
@@ -478,19 +493,19 @@
                                 }
                             </p>
                             <p class="text-muted mb-2">
-                                <strong>Source:</strong> ${result.source}
+                                <strong>Database:</strong> ${result.database}
                             </p>
                         </div>
                         <div class="col-md-4 text-end">
                             <div class="mb-2">
-                                <span class="flag-badge">
-                                    <i class="fas fa-flag me-1"></i>${
-                                      result.flag || "N/A"
-                                    }
-                                </span>
                                 ${
                                   result.flag && result.flag !== "N/A"
                                     ? `
+                                <span class="flag-badge">
+                                    <i class="fas fa-flag me-1"></i>${
+                                      result.flag
+                                    }
+                                </span>
                                 <i class="fas fa-info-circle text-info ms-2" 
                                    data-bs-toggle="tooltip" 
                                    data-bs-placement="top" 
@@ -499,7 +514,11 @@
                                      "No flag description available"
                                    }"></i>
                                 `
-                                    : ""
+                                    : `
+                                <span class="text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>No Flags
+                                </span>
+                                `
                                 }
                             </div>
                             <div>
@@ -536,7 +555,7 @@
       function removeDuplicateResults(results) {
         const seen = new Set();
         return results.filter((result) => {
-          const key = `${result.casNumber}-${result.source}`;
+          const key = `${result.casNumber}-${result.database}`;
           if (seen.has(key)) {
             return false;
           }

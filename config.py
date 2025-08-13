@@ -15,6 +15,12 @@ GOOGLE_DRIVE_CONFIG = {
         'file_name': 'PMNACC_012025.csv',
         'name': 'PMNACC Database',
         'enabled': False
+    },
+    'kecl': {
+        'file_id': '18q22nCPMf2TsDDOOhHXLFLVxJ146fSYg',
+        'file_name': 'KECL.csv',
+        'name': 'KECL Database',
+        'enabled': True
     }
 }
 

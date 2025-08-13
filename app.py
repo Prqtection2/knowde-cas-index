@@ -31,6 +31,11 @@ except ImportError:
             'name': 'PMNACC Database',
             'last_updated': '2025-01-23 18:30:00',
             'enabled': False
+        },
+        'kecl': {
+            'file_id': 'YOUR_KECL_FILE_ID_HERE',
+            'file_name': 'KECL.csv',
+            'enabled': True
         }
     }
     LOCAL_FILES = {
@@ -41,9 +46,10 @@ except ImportError:
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
-# Global variables to store the loaded data
+# Global variables to store the data
 pmnacc_data = None
 tscainv_data = None
+kecl_data = None
 
 # Use configuration from config.py
 GOOGLE_DRIVE_FILES = GOOGLE_DRIVE_CONFIG
@@ -86,69 +92,88 @@ def get_flag_description(flag):
     return "; ".join(descriptions)
 
 def load_data():
-    """Load CSV data files from Google Drive"""
-    global pmnacc_data, tscainv_data
+    """Load data from Google Drive or local files"""
+    global pmnacc_data, tscainv_data, kecl_data
     
-    try:
-        print("Starting data load from Google Drive...")
-        
-        # Load TSCAINV from Google Drive
-        tscainv_file_id = GOOGLE_DRIVE_FILES.get('tscainv', {}).get('file_id')
-        if tscainv_file_id and tscainv_file_id != 'YOUR_TSCAINV_FILE_ID_HERE':
-            print(f"Loading TSCAINV from Google Drive: {tscainv_file_id}")
+    print("Starting data loading process...")
+    
+    # Load TSCA Inventory data
+    if GOOGLE_DRIVE_CONFIG['tscainv']['enabled']:
+        print("Loading TSCA Inventory data from Google Drive...")
+        try:
+            file_id = GOOGLE_DRIVE_CONFIG['tscainv']['file_id']
+            url = f"https://drive.google.com/uc?export=download&id={file_id}"
+            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
             
-            # Use direct file access URL - this bypasses Google Drive's download restrictions
-            tscainv_url = f"https://drive.google.com/file/d/{tscainv_file_id}/view?usp=sharing"
-            
-            try:
-                print(f"Fetching from: {tscainv_url}")
-                
-                # First, get the file info to check if it's accessible
-                headers = {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-                }
-                
-                # Try the direct download URL
-                download_url = f"https://drive.google.com/uc?export=download&id={tscainv_file_id}"
-                response = requests.get(download_url, headers=headers, timeout=120)
-                
-                print(f"Response status: {response.status_code}")
-                print(f"Content length: {len(response.content)}")
-                
-                if response.status_code == 200 and len(response.content) > 1000:
-                    # Check if we got actual CSV data
-                    content = response.text
-                    if 'ID,CASRN,casregno' in content or content.startswith('ID,'):
-                        tscainv_data = pd.read_csv(io.StringIO(content))
-                        print(f"✓ Loaded TSCAINV from Google Drive: {len(tscainv_data)} records")
-                    else:
-                        print(f"✗ Response doesn't contain expected CSV headers. First 500 chars: {content[:500]}")
-                        raise Exception("Invalid CSV format")
-                else:
-                    print(f"✗ Failed to get valid response. Status: {response.status_code}, Length: {len(response.content)}")
-                    raise Exception(f"HTTP {response.status_code}")
-                    
-            except Exception as e:
-                print(f"✗ Failed to load from Google Drive: {e}")
-                raise e
-        else:
-            print("No valid TSCAINV Google Drive file ID configured")
+            response = requests.get(url, headers=headers, timeout=30)
+            if response.status_code == 200 and 'csv' in response.headers.get('content-type', '').lower():
+                # Create a StringIO object from the content
+                from io import StringIO
+                csv_content = StringIO(response.text)
+                tscainv_data = pd.read_csv(csv_content)
+                print(f"TSCA Inventory data loaded successfully. Shape: {tscainv_data.shape}")
+                print(f"TSCA Inventory columns: {list(tscainv_data.columns)}")
+            else:
+                print(f"Failed to load TSCA Inventory from Google Drive. Status: {response.status_code}")
+                tscainv_data = None
+        except Exception as e:
+            print(f"Error loading TSCA Inventory from Google Drive: {e}")
             tscainv_data = None
-        
-        # Load PMNACC data (disabled for now)
+    else:
+        print("TSCA Inventory disabled in config")
+        tscainv_data = None
+    
+    # Load PMNACC data
+    if GOOGLE_DRIVE_CONFIG['pmnacc']['enabled']:
+        print("Loading PMNACC data from Google Drive...")
+        try:
+            file_id = GOOGLE_DRIVE_CONFIG['pmnacc']['file_id']
+            url = f"https://drive.google.com/uc?export=download&id={file_id}"
+            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+            
+            response = requests.get(url, headers=headers, timeout=30)
+            if response.status_code == 200 and 'csv' in response.headers.get('content-type', '').lower():
+                from io import StringIO
+                csv_content = StringIO(response.text)
+                pmnacc_data = pd.read_csv(csv_content)
+                print(f"PMNACC data loaded successfully. Shape: {pmnacc_data.shape}")
+                print(f"PMNACC columns: {list(pmnacc_data.columns)}")
+            else:
+                print(f"Failed to load PMNACC from Google Drive. Status: {response.status_code}")
+                pmnacc_data = None
+        except Exception as e:
+            print(f"Error loading PMNACC from Google Drive: {e}")
+            pmnacc_data = None
+    else:
+        print("PMNACC disabled in config")
         pmnacc_data = None
-        
-        # Check if at least one database loaded
-        if tscainv_data is None:
-            print("✗ No databases loaded successfully")
-            return False
-        
-        print("✓ Data loading completed")
-        return True
-        
-    except Exception as e:
-        print(f"✗ Critical error loading data: {e}")
-        return False
+    
+    # Load KECL data
+    if GOOGLE_DRIVE_CONFIG['kecl']['enabled']:
+        print("Loading KECL data from Google Drive...")
+        try:
+            file_id = GOOGLE_DRIVE_CONFIG['kecl']['file_id']
+            url = f"https://drive.google.com/uc?export=download&id={file_id}"
+            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+            
+            response = requests.get(url, headers=headers, timeout=30)
+            if response.status_code == 200 and 'csv' in response.headers.get('content-type', '').lower():
+                from io import StringIO
+                csv_content = StringIO(response.text)
+                kecl_data = pd.read_csv(csv_content)
+                print(f"KECL data loaded successfully. Shape: {kecl_data.shape}")
+                print(f"KECL columns: {list(kecl_data.columns)}")
+            else:
+                print(f"Failed to load KECL from Google Drive. Status: {response.status_code}")
+                kecl_data = None
+        except Exception as e:
+            print(f"Error loading KECL from Google Drive: {e}")
+            kecl_data = None
+    else:
+        print("KECL disabled in config")
+        kecl_data = None
+    
+    print("Data loading process completed.")
 
 def normalize_cas_number(cas_number):
     """Remove dashes and spaces from CAS number"""
@@ -157,82 +182,72 @@ def normalize_cas_number(cas_number):
     return str(cas_number).replace('-', '').replace(' ', '')
 
 def search_cas_number(normalized_cas):
-    """Search for CAS number in specified database(s)"""
+    """Search for a CAS number across all enabled databases"""
     results = []
     
-    print(f"Searching for normalized CAS: '{normalized_cas}'")
-    print(f"TSCAINV data loaded: {tscainv_data is not None}")
-    if tscainv_data is not None:
-        print(f"TSCAINV data shape: {tscainv_data.shape}")
-        print(f"TSCAINV columns: {list(tscainv_data.columns)}")
+    # Search TSCA Inventory
+    if tscainv_data is not None and GOOGLE_DRIVE_CONFIG['tscainv']['enabled']:
+        try:
+            # Convert columns to string and handle NaN values
+            casregno_str = tscainv_data['casregno'].astype(str).fillna('')
+            casrn_str = tscainv_data['CASRN'].astype(str).fillna('')
+            
+            # Search in both casregno and CASRN columns
+            tsca_match = tscainv_data[
+                (casregno_str == normalized_cas) | 
+                (casrn_str == normalized_cas)
+            ]
+            
+            if not tsca_match.empty:
+                for _, row in tsca_match.iterrows():
+                    results.append({
+                        'database': 'TSCA Inventory',
+                        'chemical_name': str(row['ChemName']),
+                        'flag': str(row['FLAG']),
+                        'activity': str(row['ACTIVITY']),
+                        'cas_number': str(row['CASRN'])
+                    })
+        except Exception as e:
+            print(f"Error searching TSCA data: {e}")
     
-    # Search in PMNACC data
-    if pmnacc_data is not None:
-        print(f"PMNACC data available: {len(pmnacc_data)} records")
-        # Check a few sample CAS numbers for debugging
-        sample_cas = pmnacc_data['ACCNO'].head(5).tolist()
-        print(f"Sample PMNACC CAS numbers: {sample_cas}")
-        
-        pmnacc_match = pmnacc_data[
-            pmnacc_data['ACCNO'].apply(lambda x: normalize_cas_number(x) == normalized_cas)
-        ]
-        
-        print(f"PMNACC matches found: {len(pmnacc_match)}")
-        
-        if not pmnacc_match.empty:
-            for _, row in pmnacc_match.iterrows():
-                results.append({
-                    'source': 'PMNACC',
-                    'casNumber': str(row['ACCNO']) if pd.notna(row['ACCNO']) else '',
-                    'chemicalName': str(row['GenericName']) if pd.notna(row['GenericName']) else '',
-                    'flag': str(row['FLAG']) if pd.notna(row['FLAG']) else '',
-                    'flagDescription': get_flag_description(row['FLAG']),
-                    'activity': str(row['ACTIVITY']) if pd.notna(row['ACTIVITY']) else ''
-                })
+    # Search PMNACC
+    if pmnacc_data is not None and GOOGLE_DRIVE_CONFIG['pmnacc']['enabled']:
+        try:
+            accno_str = pmnacc_data['ACCNO'].astype(str).fillna('')
+            pmnacc_match = pmnacc_data[accno_str == normalized_cas]
+            
+            if not pmnacc_match.empty:
+                for _, row in pmnacc_match.iterrows():
+                    results.append({
+                        'database': 'PMNACC',
+                        'chemical_name': str(row['GenericName']),
+                        'flag': str(row['FLAG']),
+                        'activity': str(row['ACTIVITY']),
+                        'cas_number': str(row['ACCNO'])
+                    })
+        except Exception as e:
+            print(f"Error searching PMNACC data: {e}")
     
-    # Search in TSCAINV data
-    if tscainv_data is not None:
-        print(f"TSCAINV data available: {len(tscainv_data)} records")
-        
-        # Convert casregno to string for comparison and handle NaN values
-        tscainv_data['casregno_str'] = tscainv_data['casregno'].fillna('').astype(str)
-        tscainv_data['CASRN_str'] = tscainv_data['CASRN'].fillna('').astype(str)
-        
-        # Check if the exact CAS number exists in the data
-        exact_match_casregno = tscainv_data[tscainv_data['casregno_str'] == normalized_cas]
-        exact_match_CASRN = tscainv_data[tscainv_data['CASRN_str'] == normalized_cas]
-        
-        print(f"Exact matches in casregno: {len(exact_match_casregno)}")
-        print(f"Exact matches in CASRN: {len(exact_match_CASRN)}")
-        
-        # Check a few sample CAS numbers for debugging
-        sample_cas = tscainv_data['casregno_str'].head(10).tolist()
-        print(f"Sample TSCAINV casregno: {sample_cas}")
-        sample_casrn = tscainv_data['CASRN_str'].head(10).tolist()
-        print(f"Sample TSCAINV CASRN: {sample_casrn}")
-        
-        # Try normalized search
-        tscainv_match = tscainv_data[
-            (tscainv_data['casregno_str'].apply(lambda x: normalize_cas_number(x) == normalized_cas)) |
-            (tscainv_data['CASRN_str'].apply(lambda x: normalize_cas_number(x) == normalized_cas))
-        ]
-        
-        print(f"TSCAINV normalized matches found: {len(tscainv_match)}")
-        
-        if not tscainv_match.empty:
-            for _, row in tscainv_match.iterrows():
-                results.append({
-                    'source': 'TSCAINV',
-                    'casNumber': str(row['CASRN']) if pd.notna(row['CASRN']) else str(row['casregno']) if pd.notna(row['casregno']) else '',
-                    'chemicalName': str(row['ChemName']) if pd.notna(row['ChemName']) else '',
-                    'flag': str(row['FLAG']) if pd.notna(row['FLAG']) else '',
-                    'flagDescription': get_flag_description(row['FLAG']),
-                    'activity': str(row['ACTIVITY']) if pd.notna(row['ACTIVITY']) else ''
-                })
-    else:
-        print("TSCAINV data is None - not loaded properly")
+    # Search KECL
+    if kecl_data is not None and GOOGLE_DRIVE_CONFIG['kecl']['enabled']:
+        try:
+            cas_str = kecl_data['CAS No.'].astype(str).fillna('')
+            kecl_match = kecl_data[cas_str == normalized_cas]
+            
+            if not kecl_match.empty:
+                for _, row in kecl_match.iterrows():
+                    # Convert YES/NO to ACTIVE/INACTIVE
+                    status = 'ACTIVE' if str(row['Value']).upper() == 'YES' else 'INACTIVE'
+                    results.append({
+                        'database': 'KECL (Korea)',
+                        'chemical_name': str(row['Chemical Name']),
+                        'flag': 'N/A',  # KECL doesn't have flags like TSCA
+                        'activity': status,
+                        'cas_number': str(row['CAS No.'])
+                    })
+        except Exception as e:
+            print(f"Error searching KECL data: {e}")
     
-    print(f"Total results found: {len(results)}")
     return results
 
 def extract_cas_numbers_from_file(file_content, filename):
@@ -422,17 +437,24 @@ def database_info():
     """API endpoint for getting database information"""
     try:
         info = {}
-        for key, db_info in GOOGLE_DRIVE_FILES.items():
+        for key, db_info in GOOGLE_DRIVE_CONFIG.items():
             if db_info.get('enabled', True):
-                file_info = get_google_drive_file_info(db_info)
+                # Mock file info for now
+                file_info = {
+                    'success': True,
+                    'size': 9182919 if key == 'tscainv' else 2200000 if key == 'kecl' else 0,
+                    'last_modified': '2025-01-23 18:30:00'
+                }
+                
                 info[key] = {
-                    'name': db_info['name'],
-                    'last_updated': db_info.get('last_updated', 'Unknown'),
+                    'name': db_info.get('name', key.upper()),
+                    'last_updated': '2025-01-23 18:30:00',
                     'file_info': file_info,
                     'local_loaded': {
                         'tscainv': tscainv_data is not None,
-                        'pmnacc': pmnacc_data is not None
-                    }[key] if key in ['tscainv', 'pmnacc'] else False
+                        'pmnacc': pmnacc_data is not None,
+                        'kecl': kecl_data is not None
+                    }[key] if key in ['tscainv', 'pmnacc', 'kecl'] else False
                 }
         
         return jsonify(info)
@@ -443,20 +465,23 @@ def database_info():
 @app.route('/api/health')
 def health_check():
     """Health check endpoint"""
-    global pmnacc_data, tscainv_data
+    global pmnacc_data, tscainv_data, kecl_data
     
     status = {
         'status': 'healthy',
         'data_loaded': {
             'tscainv': tscainv_data is not None,
-            'pmnacc': pmnacc_data is not None
+            'pmnacc': pmnacc_data is not None,
+            'kecl': kecl_data is not None
         },
         'record_counts': {
             'tscainv': len(tscainv_data) if tscainv_data is not None else 0,
-            'pmnacc': len(pmnacc_data) if pmnacc_data is not None else 0
+            'pmnacc': len(pmnacc_data) if pmnacc_data is not None else 0,
+            'kecl': len(kecl_data) if kecl_data is not None else 0
         },
         'total_records': (len(tscainv_data) if tscainv_data is not None else 0) + 
-                        (len(pmnacc_data) if pmnacc_data is not None else 0)
+                        (len(pmnacc_data) if pmnacc_data is not None else 0) +
+                        (len(kecl_data) if kecl_data is not None else 0)
     }
     
     return jsonify(status)
@@ -472,7 +497,8 @@ def debug_search(cas_number):
             'normalized_cas': normalized_cas,
             'data_loaded': {
                 'tscainv': tscainv_data is not None,
-                'pmnacc': pmnacc_data is not None
+                'pmnacc': pmnacc_data is not None,
+                'kecl': kecl_data is not None
             }
         }
         
@@ -515,6 +541,23 @@ def debug_search(cas_number):
             ]
             debug_info['pmnacc_normalized_matches'] = len(normalized_matches)
         
+        if kecl_data is not None:
+            debug_info['kecl_info'] = {
+                'total_records': len(kecl_data),
+                'sample_cas_no': kecl_data['CAS No.'].head(10).tolist(),
+                'columns': list(kecl_data.columns)
+            }
+            
+            # Check for exact matches
+            exact_matches = kecl_data[kecl_data['CAS No.'] == normalized_cas]
+            debug_info['kecl_exact_matches'] = len(exact_matches)
+            
+            # Check for normalized matches
+            normalized_matches = kecl_data[
+                kecl_data['CAS No.'].apply(lambda x: normalize_cas_number(x) == normalized_cas)
+            ]
+            debug_info['kecl_normalized_matches'] = len(normalized_matches)
+        
         return jsonify(debug_info)
     
     except Exception as e:
@@ -528,19 +571,24 @@ def test_data():
     result = {
         'tscainv_loaded': tscainv_data is not None,
         'pmnacc_loaded': pmnacc_data is not None,
+        'kecl_loaded': kecl_data is not None,
         'tscainv_count': int(len(tscainv_data)) if tscainv_data is not None else 0,
         'pmnacc_count': int(len(pmnacc_data)) if pmnacc_data is not None else 0,
+        'kecl_count': int(len(kecl_data)) if kecl_data is not None else 0,
         'google_drive_config': {
             'tscainv_file_id': GOOGLE_DRIVE_FILES.get('tscainv', {}).get('file_id'),
             'tscainv_enabled': GOOGLE_DRIVE_FILES.get('tscainv', {}).get('enabled'),
             'pmnacc_file_id': GOOGLE_DRIVE_FILES.get('pmnacc', {}).get('file_id'),
-            'pmnacc_enabled': GOOGLE_DRIVE_FILES.get('pmnacc', {}).get('enabled')
+            'pmnacc_enabled': GOOGLE_DRIVE_FILES.get('pmnacc', {}).get('enabled'),
+            'kecl_file_id': GOOGLE_DRIVE_FILES.get('kecl', {}).get('file_id'),
+            'kecl_enabled': GOOGLE_DRIVE_FILES.get('kecl', {}).get('enabled')
         },
         'file_system': {
             'current_directory': os.getcwd(),
             'files_in_directory': os.listdir('.'),
             'tscainv_exists': os.path.exists('TSCAINV_012025.csv'),
-            'pmnacc_exists': os.path.exists('PMNACC_012025.csv')
+            'pmnacc_exists': os.path.exists('PMNACC_012025.csv'),
+            'kecl_exists': os.path.exists('KECL_012025.csv')
         }
     }
     
@@ -562,6 +610,46 @@ def test_data():
                 'CASRN': str(cas_110203.iloc[0]['CASRN']) if pd.notna(cas_110203.iloc[0]['CASRN']) else '',
                 'ChemName': str(cas_110203.iloc[0]['ChemName']) if pd.notna(cas_110203.iloc[0]['ChemName']) else '',
                 'ACTIVITY': str(cas_110203.iloc[0]['ACTIVITY']) if pd.notna(cas_110203.iloc[0]['ACTIVITY']) else ''
+            }
+    
+    if pmnacc_data is not None:
+        result['pmnacc_sample'] = {
+            'columns': list(pmnacc_data.columns),
+            'first_5_accno': [str(x) for x in pmnacc_data['ACCNO'].head(5).tolist()],
+            'first_5_GenericName': [str(x) for x in pmnacc_data['GenericName'].head(5).tolist()],
+            'ACCNO_dtype': str(pmnacc_data['ACCNO'].dtype),
+            'GenericName_dtype': str(pmnacc_data['GenericName'].dtype)
+        }
+        
+        # Check if 110203 exists
+        pmnacc_110203 = pmnacc_data[pmnacc_data['ACCNO'] == 110203]
+        result['pmnacc_110203_exists'] = len(pmnacc_110203) > 0
+        if len(pmnacc_110203) > 0:
+            result['pmnacc_110203_data'] = {
+                'ACCNO': str(pmnacc_110203.iloc[0]['ACCNO']) if pd.notna(pmnacc_110203.iloc[0]['ACCNO']) else '',
+                'GenericName': str(pmnacc_110203.iloc[0]['GenericName']) if pd.notna(pmnacc_110203.iloc[0]['GenericName']) else '',
+                'FLAG': str(pmnacc_110203.iloc[0]['FLAG']) if pd.notna(pmnacc_110203.iloc[0]['FLAG']) else '',
+                'ACTIVITY': str(pmnacc_110203.iloc[0]['ACTIVITY']) if pd.notna(pmnacc_110203.iloc[0]['ACTIVITY']) else ''
+            }
+    
+    if kecl_data is not None:
+        result['kecl_sample'] = {
+            'columns': list(kecl_data.columns),
+            'first_5_cas_no': [str(x) for x in kecl_data['CAS No.'].head(5).tolist()],
+            'first_5_Chemical_Name': [str(x) for x in kecl_data['Chemical Name'].head(5).tolist()],
+            'CAS_No_dtype': str(kecl_data['CAS No.'].dtype),
+            'Chemical_Name_dtype': str(kecl_data['Chemical Name'].dtype)
+        }
+        
+        # Check if 110203 exists
+        kecl_110203 = kecl_data[kecl_data['CAS No.'] == 110203]
+        result['kecl_110203_exists'] = len(kecl_110203) > 0
+        if len(kecl_110203) > 0:
+            result['kecl_110203_data'] = {
+                'CAS_No': str(kecl_110203.iloc[0]['CAS No.']) if pd.notna(kecl_110203.iloc[0]['CAS No.']) else '',
+                'Chemical_Name': str(kecl_110203.iloc[0]['Chemical Name']) if pd.notna(kecl_110203.iloc[0]['Chemical Name']) else '',
+                'Value': str(kecl_110203.iloc[0]['Value']) if pd.notna(kecl_110203.iloc[0]['Value']) else '',
+                'ACTIVITY': str(kecl_110203.iloc[0]['ACTIVITY']) if pd.notna(kecl_110203.iloc[0]['ACTIVITY']) else ''
             }
     
     return jsonify(result)
@@ -611,7 +699,8 @@ def test_cas_number(cas_number):
             'cas_number': cas_number,
             'normalized_cas': normalize_cas_number(cas_number),
             'tscainv_loaded': tscainv_data is not None,
-            'pmnacc_loaded': pmnacc_data is not None
+            'pmnacc_loaded': pmnacc_data is not None,
+            'kecl_loaded': kecl_data is not None
         }
         
         if tscainv_data is not None:
@@ -639,6 +728,52 @@ def test_cas_number(cas_number):
                     'CASRN': str(exact_casregno.iloc[0]['CASRN']) if pd.notna(exact_casregno.iloc[0]['CASRN']) else '',
                     'ChemName': str(exact_casregno.iloc[0]['ChemName']) if pd.notna(exact_casregno.iloc[0]['ChemName']) else '',
                     'ACTIVITY': str(exact_casregno.iloc[0]['ACTIVITY']) if pd.notna(exact_casregno.iloc[0]['ACTIVITY']) else ''
+                }
+        
+        if pmnacc_data is not None:
+            # Convert to string and handle NaN
+            pmnacc_data['ACCNO_str'] = pmnacc_data['ACCNO'].fillna('').astype(str)
+            
+            normalized_cas = normalize_cas_number(cas_number)
+            
+            # Check exact matches
+            exact_ACCNO = pmnacc_data[pmnacc_data['ACCNO_str'] == normalized_cas]
+            
+            result['pmnacc'] = {
+                'total_records': int(len(pmnacc_data)),  # Convert to native Python int
+                'exact_ACCNO_matches': int(len(exact_ACCNO)),
+                'sample_ACCNO': pmnacc_data['ACCNO_str'].head(5).tolist()
+            }
+            
+            if len(exact_ACCNO) > 0:
+                result['pmnacc']['found_data'] = {
+                    'ACCNO': str(exact_ACCNO.iloc[0]['ACCNO']) if pd.notna(exact_ACCNO.iloc[0]['ACCNO']) else '',
+                    'GenericName': str(exact_ACCNO.iloc[0]['GenericName']) if pd.notna(exact_ACCNO.iloc[0]['GenericName']) else '',
+                    'FLAG': str(exact_ACCNO.iloc[0]['FLAG']) if pd.notna(exact_ACCNO.iloc[0]['FLAG']) else '',
+                    'ACTIVITY': str(exact_ACCNO.iloc[0]['ACTIVITY']) if pd.notna(exact_ACCNO.iloc[0]['ACTIVITY']) else ''
+                }
+        
+        if kecl_data is not None:
+            # Convert to string and handle NaN
+            kecl_data['CAS_No_str'] = kecl_data['CAS No.'].fillna('').astype(str)
+            
+            normalized_cas = normalize_cas_number(cas_number)
+            
+            # Check exact matches
+            exact_CAS_No = kecl_data[kecl_data['CAS_No_str'] == normalized_cas]
+            
+            result['kecl'] = {
+                'total_records': int(len(kecl_data)),  # Convert to native Python int
+                'exact_CAS_No_matches': int(len(exact_CAS_No)),
+                'sample_CAS_No': kecl_data['CAS_No_str'].head(5).tolist()
+            }
+            
+            if len(exact_CAS_No) > 0:
+                result['kecl']['found_data'] = {
+                    'CAS_No': str(exact_CAS_No.iloc[0]['CAS No.']) if pd.notna(exact_CAS_No.iloc[0]['CAS No.']) else '',
+                    'Chemical_Name': str(exact_CAS_No.iloc[0]['Chemical Name']) if pd.notna(exact_CAS_No.iloc[0]['Chemical Name']) else '',
+                    'Value': str(exact_CAS_No.iloc[0]['Value']) if pd.notna(exact_CAS_No.iloc[0]['Value']) else '',
+                    'ACTIVITY': str(exact_CAS_No.iloc[0]['ACTIVITY']) if pd.notna(exact_CAS_No.iloc[0]['ACTIVITY']) else ''
                 }
         
         return jsonify(result)
