@@ -38,7 +38,7 @@ GOOGLE_DRIVE_CONFIG = {
         'file_name': 'KECL.csv',
         'name': 'KECL Database',
         'enabled': True,
-        'cas_column': 'CAS Number',
+        'cas_column': 'CAS No.',
         'name_column': 'Chemical Name',
         'flag_column': None,  # KECL doesn't have flags
         'activity_column': 'Value',  # Uses Value column (YES/NO)
