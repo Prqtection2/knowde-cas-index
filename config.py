@@ -57,6 +57,20 @@ GOOGLE_DRIVE_CONFIG = {
         'activity_column': 'Value',  # Uses Value column (YES/NO)
         'database_type': 'piccs',  # For special PICCS logic
         'description': 'Philippines Inventory of Chemicals and Chemical Substances 2017'
+    },
+    
+    'picannex': {
+        'file_id': 'YOUR_PICANNEX_FILE_ID_HERE',  # Replace with actual Google Drive file ID
+        'file_name': 'PICANNEX.csv',
+        'name': 'PICANNEX Database',
+        'enabled': True,
+        'cas_column': 'CAS no.',
+        'name_column': 'Substance name',
+        'flag_column': 'Review Programme flag,New active substance flag,Annex I substance flag',  # Multiple flag columns
+        'activity_column': 'Approval status',  # Primary status column
+        'fallback_activity_column': 'Assessment status',  # Fallback status column
+        'database_type': 'picannex',  # For special PICANNEX logic
+        'description': 'EU Biocidal Products Regulation - PICANNEX Database'
     }
     
     # To add a new database, just copy this template and fill in the details:
@@ -101,7 +115,7 @@ FLAG_DEFINITIONS = {
 DATABASE_CATEGORIES = {
     'US': ['tscainv', 'pmnacc'],
     'Asia': ['kecl', 'piccs'],
-    'Europe': [],  # Future databases
+    'Europe': ['picannex'],  # PICANNEX is EU database
     'Global': []   # Future databases
 }
 
@@ -123,5 +137,6 @@ DATABASE_CATEGORIES = {
 LOCAL_FILES = {
     'tscainv': 'TSCAINV_012025.csv',
     'pmnacc': 'PMNACC_012025.csv',
-    'piccs': 'PICCS_2017.csv'
+    'piccs': 'PICCS_2017.csv',
+    'picannex': 'PICANNEX.csv'
 } 

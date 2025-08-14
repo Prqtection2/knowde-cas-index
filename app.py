@@ -181,6 +181,31 @@ def search_database(database_key, normalized_cas):
                 elif value == 'NO':
                     result['activity'] = 'INACTIVE'
                 result['flag'] = 'N/A'  # PICCS doesn't have flags
+            elif database_key == 'picannex':
+                # PICANNEX specific logic: complex flag system and status handling
+                # Handle multiple flag columns
+                flags = []
+                flag_columns = ['Review Programme flag', 'New active substance flag', 'Annex I substance flag']
+                for flag_col in flag_columns:
+                    flag_value = str(row.get(flag_col, '')).lower().strip()
+                    if flag_value == 'true':
+                        flags.append(flag_col.replace(' flag', '').replace('_', ' ').title())
+                
+                if flags:
+                    result['flag'] = '; '.join(flags)
+                else:
+                    result['flag'] = 'N/A'
+                
+                # Handle activity status with fallback
+                approval_status = str(row.get('Approval status', '')).strip()
+                assessment_status = str(row.get('Assessment status', '')).strip()
+                
+                if approval_status and approval_status != 'nan':
+                    result['activity'] = approval_status
+                elif assessment_status and assessment_status != 'nan':
+                    result['activity'] = assessment_status
+                else:
+                    result['activity'] = 'Status Unknown'
             elif database_key == 'tscainv':
                 # TSCA specific logic: handle nan flags
                 if pd.isna(result['flag']) or result['flag'] == 'nan':
@@ -209,6 +234,15 @@ def search_database(database_key, normalized_cas):
                 'chemical_name': 'Not listed in PICCS 2017',
                 'flag': 'N/A',
                 'activity': 'INACTIVE',
+                'cas_number': normalized_cas
+            })
+        elif database_key == 'picannex':
+            # PICANNEX: not found = Not Listed
+            results.append({
+                'database': config['name'],
+                'chemical_name': 'Not listed in PICANNEX',
+                'flag': 'N/A',
+                'activity': 'Not Listed',
                 'cas_number': normalized_cas
             })
     

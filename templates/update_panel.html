@@ -328,6 +328,49 @@
                 </div>
               </div>
             </div>
+
+            <!-- PICANNEX Database -->
+            <div class="database-card p-4">
+              <div class="row align-items-center">
+                <div class="col-md-8">
+                  <div class="d-flex align-items-center mb-2">
+                    <span
+                      class="status-indicator status-online"
+                      id="picannexStatus"
+                    ></span>
+                    <h4 class="mb-0">PICANNEX Database</h4>
+                  </div>
+                  <p class="text-muted mb-2">
+                    <i class="fas fa-info-circle me-1"></i>
+                    EU Biocidal Products Regulation - PICANNEX Database
+                  </p>
+                  <div class="row">
+                    <div class="col-md-6">
+                      <small class="text-muted">
+                        <i class="fas fa-clock me-1"></i>
+                        Last Updated:
+                        <span id="picannexLastUpdated">Loading...</span>
+                      </small>
+                    </div>
+                    <div class="col-md-6">
+                      <small class="text-muted">
+                        <i class="fas fa-file-csv me-1"></i>
+                        File Size: <span id="picannexFileSize">Loading...</span>
+                      </small>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4 text-end">
+                  <button
+                    class="btn update-btn text-white"
+                    id="updatePicannexBtn"
+                    onclick="updateDatabase('picannex')"
+                  >
+                    <i class="fas fa-sync-alt me-2"></i>Update Database
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Google Drive Info -->
@@ -374,6 +417,12 @@
       const piccsLastUpdated = document.getElementById("piccsLastUpdated");
       const piccsFileSize = document.getElementById("piccsFileSize");
       const updatePiccsBtn = document.getElementById("updatePiccsBtn");
+      const picannexStatus = document.getElementById("picannexStatus");
+      const picannexLastUpdated = document.getElementById(
+        "picannexLastUpdated"
+      );
+      const picannexFileSize = document.getElementById("picannexFileSize");
+      const updatePicannexBtn = document.getElementById("updatePicannexBtn");
 
       // Initialize
       document.addEventListener("DOMContentLoaded", function () {
@@ -440,6 +489,21 @@
           } else {
             piccsStatus.className = "status-indicator status-online";
             piccsFileSize.textContent = "Local File";
+          }
+        }
+
+        // Update PICANNEX info
+        if (data.picannex) {
+          picannexLastUpdated.textContent = data.picannex.last_updated;
+
+          if (data.picannex.file_info && data.picannex.file_info.success) {
+            picannexStatus.className = "status-indicator status-online";
+            picannexFileSize.textContent = formatFileSize(
+              data.picannex.file_info.size
+            );
+          } else {
+            picannexStatus.className = "status-indicator status-online";
+            picannexFileSize.textContent = "Local File";
           }
         }
       }
