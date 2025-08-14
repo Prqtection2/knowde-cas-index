@@ -38,12 +38,25 @@ GOOGLE_DRIVE_CONFIG = {
         'file_name': 'KECL.csv',
         'name': 'KECL Database',
         'enabled': True,
-        'cas_column': 'CAS No.',
+        'cas_column': 'CAS Number',
         'name_column': 'Chemical Name',
         'flag_column': None,  # KECL doesn't have flags
         'activity_column': 'Value',  # Uses Value column (YES/NO)
         'database_type': 'kecl',  # For special KECL logic
         'description': 'Korea Existing Chemical List'
+    },
+    
+    'piccs': {
+        'file_id': '1Gr3Ez0s0P1auQWv6JvVkTBMFpgZ6zFg-',  # Replace with actual Google Drive file ID
+        'file_name': 'PICCS_2017.csv',
+        'name': 'PICCS 2017 Database',
+        'enabled': True,
+        'cas_column': 'CAS Number',
+        'name_column': 'Chemical Name',
+        'flag_column': None,  # PICCS doesn't have flags
+        'activity_column': 'Value',  # Uses Value column (YES/NO)
+        'database_type': 'piccs',  # For special PICCS logic
+        'description': 'Philippines Inventory of Chemicals and Chemical Substances 2017'
     }
     
     # To add a new database, just copy this template and fill in the details:
@@ -87,7 +100,7 @@ FLAG_DEFINITIONS = {
 # Database categories for organization
 DATABASE_CATEGORIES = {
     'US': ['tscainv', 'pmnacc'],
-    'Asia': ['kecl'],
+    'Asia': ['kecl', 'piccs'],
     'Europe': [],  # Future databases
     'Global': []   # Future databases
 }
@@ -109,5 +122,6 @@ DATABASE_CATEGORIES = {
 # Local file paths (fallback)
 LOCAL_FILES = {
     'tscainv': 'TSCAINV_012025.csv',
-    'pmnacc': 'PMNACC_012025.csv'
+    'pmnacc': 'PMNACC_012025.csv',
+    'piccs': 'PICCS_2017.csv'
 } 

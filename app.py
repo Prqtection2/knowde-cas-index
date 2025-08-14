@@ -19,45 +19,72 @@ def normalize_cas_number(cas_number):
     return str(cas_number).replace('-', '').replace(' ', '').strip()
 
 def load_database(database_key, config):
-    """Generic function to load any database from Google Drive"""
+    """Generic function to load any database from Google Drive or local files"""
     try:
-        print(f"Loading {config['name']} from Google Drive...")
+        print(f"Loading {config['name']}...")
         
-        # Construct Google Drive download URL
-        file_id = config['file_id']
-        url = f"https://drive.google.com/uc?export=download&id={file_id}"
-        headers = {'User-Agent': 'Mozilla/5.0'}
-        
-        response = requests.get(url, headers=headers, timeout=30)
-        print(f"{config['name']} Response Status: {response.status_code}")
-        print(f"{config['name']} Content-Type: {response.headers.get('content-type', 'unknown')}")
-        print(f"{config['name']} Content Length: {len(response.content)}")
-        
-        if response.status_code == 200:
+        # Try Google Drive first
+        if config['file_id'] != 'YOUR_PICCS_FILE_ID_HERE':  # Skip if placeholder file ID
             try:
-                from io import StringIO
-                csv_content = StringIO(response.text)
-                data = pd.read_csv(csv_content)
-                print(f"{config['name']} data loaded successfully. Shape: {data.shape}")
-                print(f"{config['name']} columns: {list(data.columns)}")
+                # Construct Google Drive download URL
+                file_id = config['file_id']
+                url = f"https://drive.google.com/uc?export=download&id={file_id}"
+                headers = {'User-Agent': 'Mozilla/5.0'}
                 
-                # Store the data and metadata
-                database_data[database_key] = data
-                database_metadata[database_key] = {
-                    'name': config['name'],
-                    'shape': data.shape,
-                    'columns': list(data.columns),
-                    'enabled': config['enabled']
-                }
+                response = requests.get(url, headers=headers, timeout=30)
+                print(f"{config['name']} Google Drive Response Status: {response.status_code}")
                 
-                return True
-            except Exception as csv_error:
-                print(f"CSV parsing error for {config['name']}: {csv_error}")
-                print(f"First 500 chars of response: {response.text[:500]}")
-                return False
-        else:
-            print(f"Failed to load {config['name']} from Google Drive. Status: {response.status_code}")
-            return False
+                if response.status_code == 200:
+                    from io import StringIO
+                    csv_content = StringIO(response.text)
+                    data = pd.read_csv(csv_content)
+                    print(f"{config['name']} data loaded from Google Drive successfully. Shape: {data.shape}")
+                    
+                    # Store the data and metadata
+                    database_data[database_key] = data
+                    database_metadata[database_key] = {
+                        'name': config['name'],
+                        'shape': data.shape,
+                        'columns': list(data.columns),
+                        'enabled': config['enabled']
+                    }
+                    
+                    return True
+                else:
+                    print(f"Failed to load {config['name']} from Google Drive. Status: {response.status_code}")
+            except Exception as gdrive_error:
+                print(f"Google Drive loading failed for {config['name']}: {gdrive_error}")
+        
+        # Fallback to local file loading
+        try:
+            from config import LOCAL_FILES
+            local_file = LOCAL_FILES.get(database_key)
+            if local_file:
+                import os
+                local_path = os.path.join('data', local_file)
+                if os.path.exists(local_path):
+                    data = pd.read_csv(local_path)
+                    print(f"{config['name']} data loaded from local file successfully. Shape: {data.shape}")
+                    print(f"{config['name']} columns: {list(data.columns)}")
+                    
+                    # Store the data and metadata
+                    database_data[database_key] = data
+                    database_metadata[database_key] = {
+                        'name': config['name'],
+                        'shape': data.shape,
+                        'columns': list(data.columns),
+                        'enabled': config['enabled']
+                    }
+                    
+                    return True
+                else:
+                    print(f"Local file not found: {local_path}")
+            else:
+                print(f"No local file configured for {database_key}")
+        except Exception as local_error:
+            print(f"Local file loading failed for {config['name']}: {local_error}")
+        
+        return False
             
     except Exception as e:
         print(f"Error loading {config['name']}: {e}")
@@ -146,6 +173,14 @@ def search_database(database_key, normalized_cas):
                 elif value == 'NO':
                     result['activity'] = 'INACTIVE'
                 result['flag'] = 'N/A'  # KECL doesn't have flags
+            elif database_key == 'piccs':
+                # PICCS specific logic: YES/NO -> ACTIVE/INACTIVE (same as KECL)
+                value = str(row.get('Value', '')).upper()
+                if value == 'YES':
+                    result['activity'] = 'ACTIVE'
+                elif value == 'NO':
+                    result['activity'] = 'INACTIVE'
+                result['flag'] = 'N/A'  # PICCS doesn't have flags
             elif database_key == 'tscainv':
                 # TSCA specific logic: handle nan flags
                 if pd.isna(result['flag']) or result['flag'] == 'nan':
@@ -163,6 +198,15 @@ def search_database(database_key, normalized_cas):
             results.append({
                 'database': config['name'],
                 'chemical_name': 'Not listed in KECL',
+                'flag': 'N/A',
+                'activity': 'INACTIVE',
+                'cas_number': normalized_cas
+            })
+        elif database_key == 'piccs':
+            # PICCS: not found = INACTIVE
+            results.append({
+                'database': config['name'],
+                'chemical_name': 'Not listed in PICCS 2017',
                 'flag': 'N/A',
                 'activity': 'INACTIVE',
                 'cas_number': normalized_cas

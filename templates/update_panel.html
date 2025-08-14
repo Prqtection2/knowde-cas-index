@@ -284,6 +284,50 @@
                 </div>
               </div>
             </div>
+
+            <!-- PICCS 2017 Database -->
+            <div class="database-card p-4">
+              <div class="row align-items-center">
+                <div class="col-md-8">
+                  <div class="d-flex align-items-center mb-2">
+                    <span
+                      class="status-indicator status-online"
+                      id="piccsStatus"
+                    ></span>
+                    <h4 class="mb-0">PICCS 2017 Database</h4>
+                  </div>
+                  <p class="text-muted mb-2">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Philippines Inventory of Chemicals and Chemical Substances
+                    2017
+                  </p>
+                  <div class="row">
+                    <div class="col-md-6">
+                      <small class="text-muted">
+                        <i class="fas fa-clock me-1"></i>
+                        Last Updated:
+                        <span id="piccsLastUpdated">Loading...</span>
+                      </small>
+                    </div>
+                    <div class="col-md-6">
+                      <small class="text-muted">
+                        <i class="fas fa-file-csv me-1"></i>
+                        File Size: <span id="piccsFileSize">Loading...</span>
+                      </small>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4 text-end">
+                  <button
+                    class="btn update-btn text-white"
+                    id="updatePiccsBtn"
+                    onclick="updateDatabase('piccs')"
+                  >
+                    <i class="fas fa-sync-alt me-2"></i>Update Database
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Google Drive Info -->
@@ -326,6 +370,10 @@
       const keclLastUpdated = document.getElementById("keclLastUpdated");
       const keclFileSize = document.getElementById("keclFileSize");
       const updateKeclBtn = document.getElementById("updateKeclBtn");
+      const piccsStatus = document.getElementById("piccsStatus");
+      const piccsLastUpdated = document.getElementById("piccsLastUpdated");
+      const piccsFileSize = document.getElementById("piccsFileSize");
+      const updatePiccsBtn = document.getElementById("updatePiccsBtn");
 
       // Initialize
       document.addEventListener("DOMContentLoaded", function () {
@@ -377,6 +425,21 @@
           } else {
             keclStatus.className = "status-indicator status-offline";
             keclFileSize.textContent = "Unavailable";
+          }
+        }
+
+        // Update PICCS info
+        if (data.piccs) {
+          piccsLastUpdated.textContent = data.piccs.last_updated;
+
+          if (data.piccs.file_info && data.piccs.file_info.success) {
+            piccsStatus.className = "status-indicator status-online";
+            piccsFileSize.textContent = formatFileSize(
+              data.piccs.file_info.size
+            );
+          } else {
+            piccsStatus.className = "status-indicator status-online";
+            piccsFileSize.textContent = "Local File";
           }
         }
       }
