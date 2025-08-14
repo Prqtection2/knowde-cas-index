@@ -127,57 +127,8 @@
           <h5 class="mb-3">
             <i class="fas fa-database me-2"></i>Select Database
           </h5>
-          <div class="row">
-            <div class="col-md-6">
-              <div class="form-check">
-                <input
-                  class="form-check-input"
-                  type="checkbox"
-                  name="databaseSelect"
-                  id="tscainvCheck"
-                  value="tscainv"
-                  checked
-                />
-                <label class="form-check-label" for="tscainvCheck">
-                  <strong>TSCA Inventory Database</strong>
-                  <div class="database-info">Toxic Substances Control Act</div>
-                </label>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="form-check disabled">
-                <input
-                  class="form-check-input"
-                  type="checkbox"
-                  name="databaseSelect"
-                  id="pmnaccCheck"
-                  value="pmnacc"
-                  disabled
-                />
-                <label class="form-check-label text-muted" for="pmnaccCheck">
-                  <strong>PMNACC Database</strong>
-                  <div class="database-info">
-                    Premanufacture Notification Access (Coming Soon)
-                  </div>
-                </label>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="form-check">
-                <input
-                  class="form-check-input"
-                  type="checkbox"
-                  name="databaseSelect"
-                  id="keclCheck"
-                  value="kecl"
-                  checked
-                />
-                <label class="form-check-label" for="keclCheck">
-                  <strong>KECL Database</strong>
-                  <div class="database-info">Korea Existing Chemical List</div>
-                </label>
-              </div>
-            </div>
+          <div class="row" id="databaseSelector">
+            <!-- Database checkboxes will be dynamically generated here -->
           </div>
         </div>
 
@@ -288,6 +239,7 @@
       document.addEventListener("DOMContentLoaded", function () {
         setupEventListeners();
         checkServerHealth();
+        loadDatabaseSelector();
       });
 
       function setupEventListeners() {
@@ -344,6 +296,87 @@
               }
             });
           });
+      }
+
+      async function loadDatabaseSelector() {
+        try {
+          const response = await fetch("/api/database-info");
+          const data = await response.json();
+
+          const container = document.getElementById("databaseSelector");
+          container.innerHTML = "";
+
+          let enabledCount = 0;
+
+          for (const [key, db] of Object.entries(data)) {
+            if (db.enabled) {
+              const col = document.createElement("div");
+              col.className = "col-md-6 mb-2";
+
+              const isChecked = enabledCount === 0; // First enabled database is checked by default
+              enabledCount++;
+
+              col.innerHTML = `
+                <div class="form-check">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    name="databaseSelect"
+                    id="${key}Check"
+                    value="${key}"
+                    ${isChecked ? "checked" : ""}
+                  />
+                  <label class="form-check-label" for="${key}Check">
+                    <strong>${db.name}</strong>
+                    <div class="database-info">
+                      ${
+                        db.loaded
+                          ? `✓ Loaded (${db.record_count.toLocaleString()} records)`
+                          : "⚠ Not loaded"
+                      }
+                    </div>
+                  </label>
+                </div>
+              `;
+
+              container.appendChild(col);
+            }
+          }
+
+          // If no databases are enabled, show a message
+          if (enabledCount === 0) {
+            container.innerHTML =
+              '<div class="col-12"><p class="text-muted">No databases are currently enabled.</p></div>';
+          }
+        } catch (error) {
+          console.error("Failed to load database selector:", error);
+          // Fallback to hardcoded databases
+          loadFallbackDatabases();
+        }
+      }
+
+      function loadFallbackDatabases() {
+        const container = document.getElementById("databaseSelector");
+        container.innerHTML = `
+          <div class="col-md-6">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="databaseSelect" id="tscainvCheck" value="tscainv" checked />
+              <label class="form-check-label" for="tscainvCheck">
+                <strong>TSCA Inventory Database</strong>
+                <div class="database-info">Toxic Substances Control Act</div>
+              </label>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="databaseSelect" id="keclCheck" value="kecl" checked />
+              <label class="form-check-label" for="keclCheck">
+                <strong>KECL Database</strong>
+                <div class="database-info">Korea Existing Chemical List</div>
+              </label>
+            </div>
+          </div>
+        `;
       }
 
       function getSelectedDatabases() {
