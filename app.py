@@ -211,6 +211,12 @@ def search_database(database_key, normalized_cas):
                 # POPS specific logic: if in database = regulated
                 result['activity'] = 'Regulated'  # All chemicals in POPS are regulated
                 result['flag'] = 'N/A'  # POPS doesn't have flags
+            elif database_key == 'svhc':
+                # SVHC specific logic: if in database = SVHC listed
+                result['activity'] = 'SVHC Listed'  # All chemicals in SVHC are regulated
+                # Keep the reason for inclusion as the flag
+                if pd.isna(result['flag']) or result['flag'] == 'nan':
+                    result['flag'] = 'N/A'
             elif database_key == 'tscainv':
                 # TSCA specific logic: handle nan flags
                 if pd.isna(result['flag']) or result['flag'] == 'nan':
@@ -257,6 +263,15 @@ def search_database(database_key, normalized_cas):
                 'chemical_name': 'Not regulated by POPS',
                 'flag': 'N/A',
                 'activity': 'Not Regulated',
+                'cas_number': normalized_cas
+            })
+        elif database_key == 'svhc':
+            # SVHC: not found = Not SVHC Listed
+            results.append({
+                'database': config['name'],
+                'chemical_name': 'Not listed in SVHC Candidate List',
+                'flag': 'N/A',
+                'activity': 'Not SVHC Listed',
                 'cas_number': normalized_cas
             })
     

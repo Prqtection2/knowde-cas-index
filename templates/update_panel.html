@@ -414,6 +414,49 @@
                 </div>
               </div>
             </div>
+
+            <!-- SVHC Database -->
+            <div class="database-card p-4">
+              <div class="row align-items-center">
+                <div class="col-md-8">
+                  <div class="d-flex align-items-center mb-2">
+                    <span
+                      class="status-indicator status-online"
+                      id="svhcStatus"
+                    ></span>
+                    <h4 class="mb-0">SVHC Database</h4>
+                  </div>
+                  <p class="text-muted mb-2">
+                    <i class="fas fa-info-circle me-1"></i>
+                    EU Substances of Very High Concern Candidate List
+                  </p>
+                  <div class="row">
+                    <div class="col-md-6">
+                      <small class="text-muted">
+                        <i class="fas fa-clock me-1"></i>
+                        Last Updated:
+                        <span id="svhcLastUpdated">Loading...</span>
+                      </small>
+                    </div>
+                    <div class="col-md-6">
+                      <small class="text-muted">
+                        <i class="fas fa-file-csv me-1"></i>
+                        File Size: <span id="svhcFileSize">Loading...</span>
+                      </small>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4 text-end">
+                  <button
+                    class="btn update-btn text-white"
+                    id="updateSvhcBtn"
+                    onclick="updateDatabase('svhc')"
+                  >
+                    <i class="fas fa-sync-alt me-2"></i>Update Database
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Google Drive Info -->
@@ -470,6 +513,10 @@
       const popsLastUpdated = document.getElementById("popsLastUpdated");
       const popsFileSize = document.getElementById("popsFileSize");
       const updatePopsBtn = document.getElementById("updatePopsBtn");
+      const svhcStatus = document.getElementById("svhcStatus");
+      const svhcLastUpdated = document.getElementById("svhcLastUpdated");
+      const svhcFileSize = document.getElementById("svhcFileSize");
+      const updateSvhcBtn = document.getElementById("updateSvhcBtn");
 
       // Initialize
       document.addEventListener("DOMContentLoaded", function () {
@@ -564,6 +611,19 @@
           } else {
             popsStatus.className = "status-indicator status-online";
             popsFileSize.textContent = "Local File";
+          }
+        }
+
+        // Update SVHC info
+        if (data.svhc) {
+          svhcLastUpdated.textContent = data.svhc.last_updated;
+
+          if (data.svhc.file_info && data.svhc.file_info.success) {
+            svhcStatus.className = "status-indicator status-online";
+            svhcFileSize.textContent = formatFileSize(data.svhc.file_info.size);
+          } else {
+            svhcStatus.className = "status-indicator status-online";
+            svhcFileSize.textContent = "Local File";
           }
         }
       }

@@ -84,6 +84,19 @@ GOOGLE_DRIVE_CONFIG = {
         'activity_column': 'Value',  # Uses Value column (Yes/No)
         'database_type': 'pops',  # For special POPS logic
         'description': 'EU Persistent Organic Pollutants Regulation Database'
+    },
+    
+    'svhc': {
+        'file_id': 'YOUR_SVHC_FILE_ID_HERE',  # Replace with actual Google Drive file ID
+        'file_name': 'SVHC.csv',
+        'name': 'SVHC Database',
+        'enabled': True,
+        'cas_column': 'CAS No.',
+        'name_column': 'Substance name',
+        'flag_column': 'Reason for inclusion',  # Contains reasons for SVHC listing
+        'activity_column': None,  # SVHC doesn't have activity status
+        'database_type': 'svhc',  # For special SVHC logic
+        'description': 'EU Substances of Very High Concern Candidate List'
     }
     
     # To add a new database, just copy this template and fill in the details:
@@ -128,7 +141,7 @@ FLAG_DEFINITIONS = {
 DATABASE_CATEGORIES = {
     'US': ['tscainv', 'pmnacc'],
     'Asia': ['kecl', 'piccs'],
-    'Europe': ['picannex', 'pops'],  # PICANNEX and POPS are EU databases
+    'Europe': ['picannex', 'pops', 'svhc'],  # PICANNEX, POPS, and SVHC are EU databases
     'Global': []   # Future databases
 }
 
@@ -152,5 +165,6 @@ LOCAL_FILES = {
     'pmnacc': 'PMNACC_012025.csv',
     'piccs': 'PICCS_2017.csv',
     'picannex': 'PICANNEX.csv',
-    'pops': 'POPS.csv'
+    'pops': 'POPS.csv',
+    'svhc': 'SVHC.csv'
 } 
