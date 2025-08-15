@@ -134,7 +134,8 @@ def get_flag_description(flag, database_key):
         if f in db_flags:
             descriptions.append(f"{f}: {db_flags[f]}")
         else:
-            descriptions.append(f"{f}: Flag description not available")
+            # Just show the flag without description - looks cleaner
+            descriptions.append(f)
     
     return "; ".join(descriptions)
 
