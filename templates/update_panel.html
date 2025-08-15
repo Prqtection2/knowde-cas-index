@@ -371,6 +371,49 @@
                 </div>
               </div>
             </div>
+
+            <!-- POPS Database -->
+            <div class="database-card p-4">
+              <div class="row align-items-center">
+                <div class="col-md-8">
+                  <div class="d-flex align-items-center mb-2">
+                    <span
+                      class="status-indicator status-online"
+                      id="popsStatus"
+                    ></span>
+                    <h4 class="mb-0">POPS Database</h4>
+                  </div>
+                  <p class="text-muted mb-2">
+                    <i class="fas fa-info-circle me-1"></i>
+                    EU Persistent Organic Pollutants Regulation Database
+                  </p>
+                  <div class="row">
+                    <div class="col-md-6">
+                      <small class="text-muted">
+                        <i class="fas fa-clock me-1"></i>
+                        Last Updated:
+                        <span id="popsLastUpdated">Loading...</span>
+                      </small>
+                    </div>
+                    <div class="col-md-6">
+                      <small class="text-muted">
+                        <i class="fas fa-file-csv me-1"></i>
+                        File Size: <span id="popsFileSize">Loading...</span>
+                      </small>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4 text-end">
+                  <button
+                    class="btn update-btn text-white"
+                    id="updatePopsBtn"
+                    onclick="updateDatabase('pops')"
+                  >
+                    <i class="fas fa-sync-alt me-2"></i>Update Database
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Google Drive Info -->
@@ -423,6 +466,10 @@
       );
       const picannexFileSize = document.getElementById("picannexFileSize");
       const updatePicannexBtn = document.getElementById("updatePicannexBtn");
+      const popsStatus = document.getElementById("popsStatus");
+      const popsLastUpdated = document.getElementById("popsLastUpdated");
+      const popsFileSize = document.getElementById("popsFileSize");
+      const updatePopsBtn = document.getElementById("updatePopsBtn");
 
       // Initialize
       document.addEventListener("DOMContentLoaded", function () {
@@ -504,6 +551,19 @@
           } else {
             picannexStatus.className = "status-indicator status-online";
             picannexFileSize.textContent = "Local File";
+          }
+        }
+
+        // Update POPS info
+        if (data.pops) {
+          popsLastUpdated.textContent = data.pops.last_updated;
+
+          if (data.pops.file_info && data.pops.file_info.success) {
+            popsStatus.className = "status-indicator status-online";
+            popsFileSize.textContent = formatFileSize(data.pops.file_info.size);
+          } else {
+            popsStatus.className = "status-indicator status-online";
+            popsFileSize.textContent = "Local File";
           }
         }
       }

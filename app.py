@@ -207,6 +207,10 @@ def search_database(database_key, normalized_cas):
                     result['activity'] = assessment_status
                 else:
                     result['activity'] = 'Status Unknown'
+            elif database_key == 'pops':
+                # POPS specific logic: if in database = regulated
+                result['activity'] = 'Regulated'  # All chemicals in POPS are regulated
+                result['flag'] = 'N/A'  # POPS doesn't have flags
             elif database_key == 'tscainv':
                 # TSCA specific logic: handle nan flags
                 if pd.isna(result['flag']) or result['flag'] == 'nan':
@@ -244,6 +248,15 @@ def search_database(database_key, normalized_cas):
                 'chemical_name': 'Not listed in PICANNEX',
                 'flag': 'N/A',
                 'activity': 'Not Listed',
+                'cas_number': normalized_cas
+            })
+        elif database_key == 'pops':
+            # POPS: not found = Not Regulated
+            results.append({
+                'database': config['name'],
+                'chemical_name': 'Not regulated by POPS',
+                'flag': 'N/A',
+                'activity': 'Not Regulated',
                 'cas_number': normalized_cas
             })
     

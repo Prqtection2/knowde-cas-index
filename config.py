@@ -60,7 +60,7 @@ GOOGLE_DRIVE_CONFIG = {
     },
     
     'picannex': {
-        'file_id': 'YOUR_PICANNEX_FILE_ID_HERE',  # Replace with actual Google Drive file ID
+        'file_id': '1-nmCf4J5o6VGhiuw8TpfdVi5hbMz8LxC',  # Replace with actual Google Drive file ID
         'file_name': 'PICANNEX.csv',
         'name': 'PICANNEX Database',
         'enabled': True,
@@ -71,6 +71,19 @@ GOOGLE_DRIVE_CONFIG = {
         'fallback_activity_column': 'Assessment status',  # Fallback status column
         'database_type': 'picannex',  # For special PICANNEX logic
         'description': 'EU Biocidal Products Regulation - PICANNEX Database'
+    },
+    
+    'pops': {
+        'file_id': '1ViGHkbzZNWpXiIr2TQ0BvunjANhMWtv6',  # Replace with actual Google Drive file ID
+        'file_name': 'POPS.csv',
+        'name': 'POPS Database',
+        'enabled': True,
+        'cas_column': 'CAS no',
+        'name_column': 'Substance name',
+        'flag_column': None,  # POPS doesn't have flags
+        'activity_column': 'Value',  # Uses Value column (Yes/No)
+        'database_type': 'pops',  # For special POPS logic
+        'description': 'EU Persistent Organic Pollutants Regulation Database'
     }
     
     # To add a new database, just copy this template and fill in the details:
@@ -115,7 +128,7 @@ FLAG_DEFINITIONS = {
 DATABASE_CATEGORIES = {
     'US': ['tscainv', 'pmnacc'],
     'Asia': ['kecl', 'piccs'],
-    'Europe': ['picannex'],  # PICANNEX is EU database
+    'Europe': ['picannex', 'pops'],  # PICANNEX and POPS are EU databases
     'Global': []   # Future databases
 }
 
@@ -138,5 +151,6 @@ LOCAL_FILES = {
     'tscainv': 'TSCAINV_012025.csv',
     'pmnacc': 'PMNACC_012025.csv',
     'piccs': 'PICCS_2017.csv',
-    'picannex': 'PICANNEX.csv'
+    'picannex': 'PICANNEX.csv',
+    'pops': 'POPS.csv'
 } 
