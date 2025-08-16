@@ -217,6 +217,20 @@ def search_database(database_key, normalized_cas):
                 # Keep the reason for inclusion as the flag
                 if pd.isna(result['flag']) or result['flag'] == 'nan':
                     result['flag'] = 'N/A'
+            elif database_key == 'nzioc':
+                # NZIOC specific logic: parse approval text for activity status
+                approval_text = str(result['flag']).lower()
+                
+                if 'group standard' in approval_text:
+                    result['activity'] = 'Group Approved'
+                elif 'individual approval' in approval_text:
+                    result['activity'] = 'Individual Approved'
+                else:
+                    result['activity'] = 'Other'
+                
+                # Keep the full approval text as the flag
+                if pd.isna(result['flag']) or result['flag'] == 'nan':
+                    result['flag'] = 'N/A'
             elif database_key == 'tscainv':
                 # TSCA specific logic: handle nan flags
                 if pd.isna(result['flag']) or result['flag'] == 'nan':
@@ -272,6 +286,15 @@ def search_database(database_key, normalized_cas):
                 'chemical_name': 'Not listed in SVHC Candidate List',
                 'flag': 'N/A',
                 'activity': 'Not SVHC Listed',
+                'cas_number': normalized_cas
+            })
+        elif database_key == 'nzioc':
+            # NZIOC: not found = Not Listed
+            results.append({
+                'database': config['name'],
+                'chemical_name': 'Not listed in NZIOC',
+                'flag': 'N/A',
+                'activity': 'Not Listed',
                 'cas_number': normalized_cas
             })
     

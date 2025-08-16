@@ -457,6 +457,49 @@
                 </div>
               </div>
             </div>
+
+            <!-- NZIOC Database -->
+            <div class="database-card p-4">
+              <div class="row align-items-center">
+                <div class="col-md-8">
+                  <div class="d-flex align-items-center mb-2">
+                    <span
+                      class="status-indicator status-online"
+                      id="nziocStatus"
+                    ></span>
+                    <h4 class="mb-0">NZIOC Database</h4>
+                  </div>
+                  <p class="text-muted mb-2">
+                    <i class="fas fa-info-circle me-1"></i>
+                    New Zealand Inventory of Chemicals Database
+                  </p>
+                  <div class="row">
+                    <div class="col-md-6">
+                      <small class="text-muted">
+                        <i class="fas fa-clock me-1"></i>
+                        Last Updated:
+                        <span id="nziocLastUpdated">Loading...</span>
+                      </small>
+                    </div>
+                    <div class="col-md-6">
+                      <small class="text-muted">
+                        <i class="fas fa-file-csv me-1"></i>
+                        File Size: <span id="nziocFileSize">Loading...</span>
+                      </small>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4 text-end">
+                  <button
+                    class="btn update-btn text-white"
+                    id="updateNziocBtn"
+                    onclick="updateDatabase('nzioc')"
+                  >
+                    <i class="fas fa-sync-alt me-2"></i>Update Database
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Google Drive Info -->
@@ -517,6 +560,10 @@
       const svhcLastUpdated = document.getElementById("svhcLastUpdated");
       const svhcFileSize = document.getElementById("svhcFileSize");
       const updateSvhcBtn = document.getElementById("updateSvhcBtn");
+      const nziocStatus = document.getElementById("nziocStatus");
+      const nziocLastUpdated = document.getElementById("nziocLastUpdated");
+      const nziocFileSize = document.getElementById("nziocFileSize");
+      const updateNziocBtn = document.getElementById("updateNziocBtn");
 
       // Initialize
       document.addEventListener("DOMContentLoaded", function () {
@@ -624,6 +671,19 @@
           } else {
             svhcStatus.className = "status-indicator status-online";
             svhcFileSize.textContent = "Local File";
+          }
+        }
+
+        // Update NZIOC info
+        if (data.nzioc) {
+          nziocLastUpdated.textContent = data.nzioc.last_updated;
+
+          if (data.nzioc.file_info && data.nzioc.file_info.success) {
+            nziocStatus.className = "status-indicator status-online";
+            nziocFileSize.textContent = formatFileSize(data.nzioc.file_info.size);
+          } else {
+            nziocStatus.className = "status-indicator status-online";
+            nziocFileSize.textContent = "Local File";
           }
         }
       }

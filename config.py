@@ -97,6 +97,19 @@ GOOGLE_DRIVE_CONFIG = {
         'activity_column': None,  # SVHC doesn't have activity status
         'database_type': 'svhc',  # For special SVHC logic
         'description': 'EU Substances of Very High Concern Candidate List'
+    },
+    
+    'nzioc': {
+        'file_id': 'YOUR_NZIOC_FILE_ID_HERE',  # Replace with actual Google Drive file ID
+        'file_name': 'NZIOC.csv',
+        'name': 'NZIOC Database',
+        'enabled': True,
+        'cas_column': 'CAS Number',
+        'name_column': 'CAS Name',
+        'flag_column': 'Approval',  # Contains full approval text
+        'activity_column': None,  # NZIOC doesn't have separate activity status
+        'database_type': 'nzioc',  # For special NZIOC logic
+        'description': 'New Zealand Inventory of Chemicals Database'
     }
     
     # To add a new database, just copy this template and fill in the details:
@@ -142,7 +155,7 @@ DATABASE_CATEGORIES = {
     'US': ['tscainv', 'pmnacc'],
     'Asia': ['kecl', 'piccs'],
     'Europe': ['picannex', 'pops', 'svhc'],  # PICANNEX, POPS, and SVHC are EU databases
-    'Global': []   # Future databases
+    'Global': ['nzioc']   # NZIOC is a global/Oceania database
 }
 
 # How to get Google Drive File ID:
@@ -166,5 +179,6 @@ LOCAL_FILES = {
     'piccs': 'PICCS_2017.csv',
     'picannex': 'PICANNEX.csv',
     'pops': 'POPS.csv',
-    'svhc': 'SVHC.csv'
+    'svhc': 'SVHC.csv',
+    'nzioc': 'NZIOC.csv'
 } 
