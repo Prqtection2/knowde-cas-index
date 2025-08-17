@@ -500,6 +500,49 @@
                 </div>
               </div>
             </div>
+
+            <!-- AICIS Database -->
+            <div class="database-card p-4">
+              <div class="row align-items-center">
+                <div class="col-md-8">
+                  <div class="d-flex align-items-center mb-2">
+                    <span
+                      class="status-indicator status-online"
+                      id="aicisStatus"
+                    ></span>
+                    <h4 class="mb-0">AICIS Database</h4>
+                  </div>
+                  <p class="text-muted mb-2">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Australian Industrial Chemicals Introduction Scheme Database
+                  </p>
+                  <div class="row">
+                    <div class="col-md-6">
+                      <small class="text-muted">
+                        <i class="fas fa-clock me-1"></i>
+                        Last Updated:
+                        <span id="aicisLastUpdated">Loading...</span>
+                      </small>
+                    </div>
+                    <div class="col-md-6">
+                      <small class="text-muted">
+                        <i class="fas fa-file-csv me-1"></i>
+                        File Size: <span id="aicisFileSize">Loading...</span>
+                      </small>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4 text-end">
+                  <button
+                    class="btn update-btn text-white"
+                    id="updateAicisBtn"
+                    onclick="updateDatabase('aicis')"
+                  >
+                    <i class="fas fa-sync-alt me-2"></i>Update Database
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Google Drive Info -->
@@ -564,6 +607,10 @@
       const nziocLastUpdated = document.getElementById("nziocLastUpdated");
       const nziocFileSize = document.getElementById("nziocFileSize");
       const updateNziocBtn = document.getElementById("updateNziocBtn");
+      const aicisStatus = document.getElementById("aicisStatus");
+      const aicisLastUpdated = document.getElementById("aicisLastUpdated");
+      const aicisFileSize = document.getElementById("aicisFileSize");
+      const updateAicisBtn = document.getElementById("updateAicisBtn");
 
       // Initialize
       document.addEventListener("DOMContentLoaded", function () {
@@ -680,10 +727,27 @@
 
           if (data.nzioc.file_info && data.nzioc.file_info.success) {
             nziocStatus.className = "status-indicator status-online";
-            nziocFileSize.textContent = formatFileSize(data.nzioc.file_info.size);
+            nziocFileSize.textContent = formatFileSize(
+              data.nzioc.file_info.size
+            );
           } else {
             nziocStatus.className = "status-indicator status-online";
             nziocFileSize.textContent = "Local File";
+          }
+        }
+
+        // Update AICIS info
+        if (data.aicis) {
+          aicisLastUpdated.textContent = data.aicis.last_updated;
+
+          if (data.aicis.file_info && data.aicis.file_info.success) {
+            aicisStatus.className = "status-indicator status-online";
+            aicisFileSize.textContent = formatFileSize(
+              data.aicis.file_info.size
+            );
+          } else {
+            aicisStatus.className = "status-indicator status-online";
+            aicisFileSize.textContent = "Local File";
           }
         }
       }

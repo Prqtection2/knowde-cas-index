@@ -231,6 +231,10 @@ def search_database(database_key, normalized_cas):
                 # Keep the full approval text as the flag
                 if pd.isna(result['flag']) or result['flag'] == 'nan':
                     result['flag'] = 'N/A'
+            elif database_key == 'aicis':
+                # AICIS specific logic: if in database = Active
+                result['activity'] = 'Active'  # All chemicals in AICIS are active
+                result['flag'] = 'N/A'  # AICIS doesn't have flags
             elif database_key == 'tscainv':
                 # TSCA specific logic: handle nan flags
                 if pd.isna(result['flag']) or result['flag'] == 'nan':
@@ -295,6 +299,15 @@ def search_database(database_key, normalized_cas):
                 'chemical_name': 'Not listed in NZIOC',
                 'flag': 'N/A',
                 'activity': 'Not Listed',
+                'cas_number': normalized_cas
+            })
+        elif database_key == 'aicis':
+            # AICIS: not found = Inactive
+            results.append({
+                'database': config['name'],
+                'chemical_name': 'Not listed in AICIS',
+                'flag': 'N/A',
+                'activity': 'Inactive',
                 'cas_number': normalized_cas
             })
     

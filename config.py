@@ -110,6 +110,19 @@ GOOGLE_DRIVE_CONFIG = {
         'activity_column': None,  # NZIOC doesn't have separate activity status
         'database_type': 'nzioc',  # For special NZIOC logic
         'description': 'New Zealand Inventory of Chemicals Database'
+    },
+    
+    'aicis': {
+        'file_id': 'YOUR_AICIS_FILE_ID_HERE',  # Replace with actual Google Drive file ID
+        'file_name': 'AICIS.csv',
+        'name': 'AICIS Database',
+        'enabled': True,
+        'cas_column': 'CAS No',
+        'name_column': 'Chemical Name',
+        'flag_column': None,  # AICIS doesn't have flags
+        'activity_column': None,  # AICIS doesn't have separate activity status
+        'database_type': 'aicis',  # For special AICIS logic
+        'description': 'Australian Industrial Chemicals Introduction Scheme Database'
     }
     
     # To add a new database, just copy this template and fill in the details:
@@ -155,7 +168,7 @@ DATABASE_CATEGORIES = {
     'US': ['tscainv', 'pmnacc'],
     'Asia': ['kecl', 'piccs'],
     'Europe': ['picannex', 'pops', 'svhc'],  # PICANNEX, POPS, and SVHC are EU databases
-    'Global': ['nzioc']   # NZIOC is a global/Oceania database
+    'Oceania': ['aicis', 'nzioc']   # AICIS (Australia) and NZIOC (New Zealand)
 }
 
 # How to get Google Drive File ID:
@@ -180,5 +193,6 @@ LOCAL_FILES = {
     'picannex': 'PICANNEX.csv',
     'pops': 'POPS.csv',
     'svhc': 'SVHC.csv',
-    'nzioc': 'NZIOC.csv'
+    'nzioc': 'NZIOC.csv',
+    'aicis': 'AICIS.csv'
 } 
